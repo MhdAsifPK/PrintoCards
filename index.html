@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ml">
 <head>
@@ -95,7 +96,7 @@
             </h1>
             <span id="syncBadge" class="text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold flex items-center gap-1.5">
               <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block"></span>
-              <span id="syncBadgeText">40+ ലൈവ്</span>
+              <span id="syncBadgeText">40+ ക്ലൗഡ് കണക്റ്റഡ്</span>
             </span>
           </div>
           
@@ -111,7 +112,7 @@
         </div>
       </div>
 
-      <!-- Action Buttons (Admin Switcher, Excel, New Job) -->
+      <!-- Action Buttons -->
       <div class="flex items-center gap-2">
         <!-- Admin Role Toggle Button -->
         <button id="adminRoleBtn" onclick="toggleAdminLoginModal()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-xs font-semibold text-slate-200 border border-slate-700 flex items-center gap-1.5 shadow-sm transition">
@@ -191,7 +192,7 @@
       <!-- Injected dynamically by JavaScript -->
     </div>
 
-    <!-- Empty State (Shown when no jobs exist) -->
+    <!-- Empty State -->
     <div id="emptyState" class="hidden text-center py-16 px-4">
       <div class="w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center text-3xl mx-auto mb-3 shadow-inner">
         📦
@@ -207,6 +208,7 @@
 
   </main>
 
+  <!-- Admin Login Modal -->
   <div id="adminLoginModal" class="app-modal fixed inset-0 z-50 bg-black/85 backdrop-blur-sm items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-xs shadow-2xl p-6 text-center">
       <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-3 text-2xl">
@@ -237,26 +239,7 @@
     </div>
   </div>
 
-  <div id="changePinModal" class="app-modal fixed inset-0 z-50 bg-black/85 backdrop-blur-sm items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xs shadow-2xl p-5 text-center">
-      <h4 class="text-sm font-bold text-white mb-2">അഡ്മിൻ കോഡ് മാറ്റുക</h4>
-      <form onsubmit="handleChangePinSubmit(event)" class="space-y-2.5 text-left text-xs">
-        <div>
-          <label class="text-slate-400">നിലവിലെ കോഡ്:</label>
-          <input type="password" id="oldPinInput" required class="w-full px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-emerald-400 font-mono mt-0.5">
-        </div>
-        <div>
-          <label class="text-slate-400">പുതിയ രഹസ്യ കോഡ്:</label>
-          <input type="password" id="newPinInput" required class="w-full px-3 py-1.5 bg-slate-950 border border-slate-700 rounded-lg text-emerald-400 font-mono mt-0.5">
-        </div>
-        <div class="flex items-center justify-end gap-2 pt-2">
-          <button type="button" onclick="closeChangePinModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300">റദ്ദാക്കുക</button>
-          <button type="submit" class="px-4 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold">സേവ് ചെയ്യുക</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
+  <!-- New Job Modal -->
   <div id="newJobModal" class="app-modal fixed inset-0 z-50 bg-black/80 backdrop-blur-sm items-center justify-center p-3 sm:p-4">
     <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
       
@@ -269,7 +252,7 @@
 
       <form id="newJobForm" onsubmit="handleCreateJob(event)" class="p-5 space-y-4 overflow-y-auto">
         
-        <!-- Job Type Selector (Lanyard vs PVC Card) -->
+        <!-- Job Type Selector -->
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1.5">പ്രൊഡക്റ്റ് ടൈപ്പ് (Product Type) *</label>
           <div class="grid grid-cols-2 gap-2">
@@ -349,6 +332,7 @@
     </div>
   </div>
 
+  <!-- Factory Access Gate Modal -->
   <div id="factoryLockModal" class="app-modal fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-md items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-sm shadow-2xl p-6 text-center">
       <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center mx-auto mb-4 text-2xl shadow-lg shadow-emerald-500/10">
@@ -372,9 +356,6 @@
             >
             <button type="button" onclick="toggleInputSecret('initialAccessCodeInput', this)" class="absolute right-3 top-2.5 text-slate-400 hover:text-white text-xs">👁️</button>
           </div>
-          <p class="text-[10px] text-slate-500 mt-1.5 leading-normal">
-            * പ്രൊഡക്ഷൻ ഡാറ്റ കാണുന്നതിന് ശരിയായ ഫാക്ടറി കോഡ് നൽകുക.
-          </p>
         </div>
 
         <button type="submit" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:opacity-95 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/25 transition active:scale-95">
@@ -384,7 +365,7 @@
     </div>
   </div>
 
-  <!-- Factory Channel Settings Modal -->
+  <!-- Factory Channel Settings Modal (Admin Only) -->
   <div id="channelSettingsModal" class="app-modal fixed inset-0 z-50 bg-black/80 backdrop-blur-sm items-center justify-center p-4">
     <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-sm shadow-2xl p-5">
       <h4 class="text-sm font-bold text-white mb-2 flex items-center gap-2">
@@ -431,18 +412,6 @@
     </div>
   </div>
 
-  <!-- Quick Proof Image Attach Modal -->
-  <div id="attachImageModal" class="app-modal fixed inset-0 z-50 bg-black/80 backdrop-blur-sm items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xs shadow-2xl p-5 text-center">
-      <h4 class="text-sm font-bold text-white mb-2">പ്രൂഫ് ചിത്രം ചേർക്കുക</h4>
-      <input type="file" id="quickImageInput" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-500 file:text-slate-950 hover:file:bg-emerald-400 cursor-pointer mb-4">
-      <div class="flex items-center justify-end gap-2">
-        <button onclick="closeAttachImageModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 text-xs">ക്ലോസ്</button>
-        <button onclick="saveQuickAttachedImage()" class="px-4 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold text-xs">സേവ് ചെയ്യുക</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Toast Notification Bar -->
   <div id="toast" class="fixed bottom-5 right-5 z-50 transition-all duration-300 transform translate-y-24 opacity-0 pointer-events-none">
     <div id="toastContent" class="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-700 bg-slate-900 shadow-2xl text-xs font-semibold text-white">
@@ -453,7 +422,6 @@
 
   <script>
     // --- STAGE DEFINITIONS ---
-    // 🧵 8 Stages for Lanyards
     const LANYARD_STAGES = [
       { id: 'confirmation', name: 'Confirmation', icon: '📝' },
       { id: 'printing',     name: 'Printing',     icon: '🖨' },
@@ -465,19 +433,18 @@
       { id: 'packing',      name: 'Packing',      icon: '📦' }
     ];
 
-    // 💳 5 Stages for PVC Cards
     const PVC_STAGES = [
-      { id: 'confirmation',      name: 'Confirmation',      icon: '📝' },
+      { id: 'confirmation',      name: 'Confirmation',       icon: '📝' },
       { id: 'scoring_soldering', name: 'Scoring / Soldering',icon: '⚡' },
-      { id: 'fusing',            name: 'Fusing',             icon: '🔥' },
-      { id: 'cutting',           name: 'Cutting',            icon: '✂️' },
-      { id: 'packing',           name: 'Packing',            icon: '📦' }
+      { id: 'fusing',            name: 'Fusing',              icon: '🔥' },
+      { id: 'cutting',           name: 'Cutting',             icon: '✂️' },
+      { id: 'packing',           name: 'Packing',             icon: '📦' }
     ];
 
     // --- APPLICATION STATE ---
     let currentUserId = getOrCreateUserId();
     let storedFactoryPassword = localStorage.getItem('prod_factory_password') || 'PRINTO';
-    let factorySyncChannel = localStorage.getItem('prod_factory_channel') || '';
+    let factorySyncChannel = localStorage.getItem('prod_factory_channel') || 'PRINTO'; // Default directly to PRINTO
     let isCodeVisible = false;
     let currentTypeFilter = 'all';
     let currentStatusFilter = 'all';
@@ -489,7 +456,6 @@
     let jobs = [];
     let tempNewJobImage = null;
     let pendingDeleteId = null;
-    let pendingAttachJobId = null;
     let mqttClient = null;
 
     // --- USER IDENTIFIER ---
@@ -502,17 +468,36 @@
       return id;
     }
 
-    // --- PERMANENT LOCAL STORAGE ENGINE ---
+    // --- SMART LOCAL STORAGE WITH AUTO-DATA RECOVERY ---
     function getStorageKey() {
-      return factorySyncChannel ? `prod_data_${factorySyncChannel}` : 'prod_data_temp_default';
+      return `prod_data_${factorySyncChannel || 'PRINTO'}`;
     }
 
+    // Scans past keys and ensures zero data loss
     function loadLocalJobs() {
       try {
-        const raw = localStorage.getItem(getStorageKey());
+        // 1. Check current standard key
+        const currentKey = getStorageKey();
+        const raw = localStorage.getItem(currentKey);
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) return parsed;
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+
+        // 2. Auto-Recovery: Search all localStorage keys for previously entered data
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && (k.startsWith('prod_data_') || k.includes('job') || k.includes('tracker'))) {
+            try {
+              const val = localStorage.getItem(k);
+              const p = JSON.parse(val);
+              if (Array.isArray(p) && p.length > 0 && p[0].title) {
+                console.log("Auto-Recovered data from key:", k);
+                localStorage.setItem(currentKey, JSON.stringify(p));
+                return p;
+              }
+            } catch(e){}
+          }
         }
       } catch (err) {
         console.error("Local load error:", err);
@@ -524,7 +509,7 @@
       try {
         localStorage.setItem(getStorageKey(), JSON.stringify(jobs));
       } catch (err) {
-        console.warn("Storage full:", err);
+        console.warn("Storage error:", err);
       }
     }
 
@@ -595,36 +580,6 @@
       }
     };
 
-    window.openChangePinModal = function() {
-      closeAdminLoginModal();
-      document.getElementById('oldPinInput').value = '';
-      document.getElementById('newPinInput').value = '';
-      document.getElementById('changePinModal').classList.add('active');
-    };
-
-    window.closeChangePinModal = function() {
-      document.getElementById('changePinModal').classList.remove('active');
-    };
-
-    window.handleChangePinSubmit = function(e) {
-      e.preventDefault();
-      const oldPin = document.getElementById('oldPinInput').value.trim();
-      const newPin = document.getElementById('newPinInput').value.trim();
-      if (oldPin !== storedAdminPin) {
-        showToast('നിലവിലെ കോഡ് തെറ്റാണ്!', 'warning');
-        return;
-      }
-      if (!newPin || newPin.length < 3) {
-        showToast('പുതിയ കോഡിന് കുറഞ്ഞത് 3 അക്ഷരങ്ങൾ വേണം', 'warning');
-        return;
-      }
-      storedAdminPin = newPin;
-      localStorage.setItem('prod_admin_pin', newPin);
-      closeChangePinModal();
-      showToast('അഡ്മിൻ കോഡ് വിജയകരമായി മാറ്റി!', 'success');
-    };
-
-    // Permission Guard for Actions
     function requireAdminPermission() {
       if (!isAdmin) {
         showToast('മാറ്റങ്ങൾ വരുത്താൻ അഡ്മിൻ കോഡ് നൽകുക!', 'warning');
@@ -641,6 +596,7 @@
       }
     };
 
+    // --- REALTIME SYNC WITH PERMANENT CLOUD RETAIN ---
     function initRealtimeSync() {
       updateChannelLabelDisplay();
 
@@ -670,27 +626,23 @@
         mqttClient = mqtt.connect(brokerUrl, {
           clientId: clientId,
           clean: true,
-          connectTimeout: 5000,
+          connectTimeout: 7000,
           reconnectPeriod: 4000
         });
 
-        const topic = `factory/prod_tracker_v7/${factorySyncChannel}`;
+        const topic = `factory/prod_tracker_v9/${factorySyncChannel}`;
 
         mqttClient.on('connect', () => {
           updateSyncBadge(true);
           mqttClient.subscribe(topic, { qos: 1 });
           
+          broadcastMessage({
+            type: 'STATE_REQUEST',
+            sender: currentUserId
+          });
+
           if (jobs.length > 0) {
-            broadcastMessage({
-              type: 'STATE_SHARE',
-              sender: currentUserId,
-              jobs: jobs
-            });
-          } else {
-            broadcastMessage({
-              type: 'STATE_REQUEST',
-              sender: currentUserId
-            });
+            broadcastRetainedSnapshot();
           }
         });
 
@@ -713,15 +665,24 @@
       }
     }
 
-    function broadcastMessage(payloadObj) {
+    function broadcastMessage(payloadObj, retain = false) {
       if (mqttClient && mqttClient.connected) {
         try {
-          const topic = `factory/prod_tracker_v7/${factorySyncChannel}`;
-          mqttClient.publish(topic, JSON.stringify(payloadObj), { qos: 1 });
+          const topic = `factory/prod_tracker_v9/${factorySyncChannel}`;
+          mqttClient.publish(topic, JSON.stringify(payloadObj), { qos: 1, retain: retain });
         } catch (e) {
           console.warn("Broadcast error:", e);
         }
       }
+    }
+
+    function broadcastRetainedSnapshot() {
+      broadcastMessage({
+        type: 'STATE_SHARE',
+        sender: currentUserId,
+        jobs: jobs,
+        timestamp: Date.now()
+      }, true);
     }
 
     function handleIncomingBroadcast(data) {
@@ -730,11 +691,12 @@
           broadcastMessage({
             type: 'STATE_SHARE',
             sender: currentUserId,
-            jobs: jobs
+            jobs: jobs,
+            timestamp: Date.now()
           });
         }
       } else if (data.type === 'STATE_SHARE') {
-        if (Array.isArray(data.jobs)) {
+        if (Array.isArray(data.jobs) && data.jobs.length > 0) {
           jobs = mergeJobsLists(jobs, data.jobs);
           saveLocalJobs();
           renderJobs();
@@ -757,6 +719,7 @@
           jobs = jobs.filter(j => j.id !== data.jobId);
           saveLocalJobs();
           renderJobs();
+          broadcastRetainedSnapshot();
           showToast('ഒരു ഓർഡർ നീക്കം ചെയ്യപ്പെട്ടു', 'warning');
         }
       }
@@ -772,7 +735,7 @@
           const lj = map.get(rj.id);
           const lTime = lj.updatedAt || 0;
           const rTime = rj.updatedAt || 0;
-          if (rTime > lTime) {
+          if (rTime >= lTime) {
             map.set(rj.id, rj);
           }
         }
@@ -805,8 +768,9 @@
         if (searchVal) {
           const matchTitle = (job.title || '').toLowerCase().includes(searchVal);
           const matchClient = (job.client || '').toLowerCase().includes(searchVal);
+          const matchNotes = (job.notes || '').toLowerCase().includes(searchVal);
           const matchId = (job.id || '').toLowerCase().includes(searchVal);
-          if (!matchTitle && !matchClient && !matchId) return false;
+          if (!matchTitle && !matchClient && !matchNotes && !matchId) return false;
         }
         return true;
       });
@@ -846,13 +810,12 @@
                     <span class="text-[10px] font-mono text-slate-500">#${job.id.substring(job.id.length - 5)}</span>
                   </div>
                   <h3 class="text-sm sm:text-base font-extrabold text-white mt-1 leading-snug">${escapeHtml(job.title)}</h3>
-                  <div class="text-xs text-slate-400 flex items-center gap-2 mt-0.5">
+                  <div class="text-xs text-slate-400 flex items-center gap-2 mt-0.5 flex-wrap">
                     <span>${job.client ? '🏢 ' + escapeHtml(job.client) : 'ക്ലയന്റ് വിവരമില്ല'}</span>
                     ${job.quantity ? `<span>•</span><span>📦 ${job.quantity} pcs</span>` : ''}
                   </div>
                 </div>
 
-                <!-- Delete Menu Button (Only for Admins) -->
                 ${isAdmin ? `
                   <button onclick="promptDeleteJob('${job.id}')" title="കളയുക" class="text-slate-500 hover:text-rose-400 p-1 rounded-lg hover:bg-slate-800 transition">
                     🗑️
@@ -862,10 +825,19 @@
                 `}
               </div>
 
+              <!-- PRODUCT NOTES DISPLAY (IF AVAILABLE) -->
+              ${job.notes ? `
+                <div class="mt-2.5 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-200 text-xs flex items-start gap-1.5 shadow-sm">
+                  <span class="text-amber-400 font-bold flex-shrink-0">📌</span>
+                  <div class="text-[11px] leading-snug break-words">
+                    <span class="font-bold text-amber-300">കുറിപ്പ്:</span> ${escapeHtml(job.notes)}
+                  </div>
+                </div>
+              ` : ''}
+
               <!-- PRODUCT STATUS & INDICATOR LIGHT BOX -->
-              <div class="mt-3.5 p-3 rounded-xl ${completed ? 'bg-emerald-950/30 border border-emerald-500/30' : 'bg-rose-950/30 border border-rose-500/30'} flex items-center justify-between">
+              <div class="mt-3 p-3 rounded-xl ${completed ? 'bg-emerald-950/30 border border-emerald-500/30' : 'bg-rose-950/30 border border-rose-500/30'} flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                  <!-- The Glowing Round Light -->
                   <div class="w-6 h-6 rounded-full flex-shrink-0 ${completed ? 'light-green' : 'light-red'}"></div>
                   <div>
                     <div class="text-[10px] font-bold tracking-wider uppercase ${completed ? 'text-emerald-400' : 'text-rose-400'}">
@@ -877,18 +849,13 @@
                   </div>
                 </div>
 
-                <!-- Proof Thumbnail / Add Proof Image -->
                 <div>
                   ${job.proofImage ? `
                     <div class="relative group cursor-pointer" onclick="openLightbox('${job.proofImage}', '${escapeHtml(job.title)}')">
                       <img src="${job.proofImage}" class="w-10 h-10 rounded-lg object-cover border border-slate-700 hover:border-emerald-400 transition shadow">
                       <span class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white text-[10px] rounded-lg transition">👁️</span>
                     </div>
-                  ` : `
-                    <button onclick="handleAttachProofClick('${job.id}')" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[10px] font-bold text-slate-300 border border-slate-700 flex items-center gap-1 active:scale-95 transition">
-                      <span>📷</span> പ്രൂഫ്
-                    </button>
-                  `}
+                  ` : ''}
                 </div>
               </div>
 
@@ -958,13 +925,10 @@
         job: job
       });
 
+      broadcastRetainedSnapshot();
+
       const done = job.stages[stageId];
       showToast(`${job.title}: ${stageId} ${done ? 'പൂർത്തിയായി' : 'മാറ്റി'}`, done ? 'success' : 'default');
-    };
-
-    window.handleAttachProofClick = function(jobId) {
-      if (!requireAdminPermission()) return;
-      promptAttachImage(jobId);
     };
 
     window.handleCreateJob = function(e) {
@@ -1005,6 +969,8 @@
         sender: currentUserId,
         job: newJob
       });
+
+      broadcastRetainedSnapshot();
 
       showToast(`പുതിയ ജോബ് "${title}" ചേർത്തു!`, 'success');
       playNotificationBeep();
@@ -1054,47 +1020,6 @@
       img.src = src;
     }
 
-    function promptAttachImage(jobId) {
-      pendingAttachJobId = jobId;
-      document.getElementById('quickImageInput').value = '';
-      document.getElementById('attachImageModal').classList.add('active');
-    }
-
-    window.closeAttachImageModal = function() {
-      pendingAttachJobId = null;
-      document.getElementById('attachImageModal').classList.remove('active');
-    };
-
-    window.saveQuickAttachedImage = function() {
-      if (!requireAdminPermission()) return;
-
-      const fileInput = document.getElementById('quickImageInput');
-      if (!fileInput.files || !fileInput.files[0] || !pendingAttachJobId) {
-        closeAttachImageModal();
-        return;
-      }
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        compressBase64Image(evt.target.result, 800, 0.7, (compressed) => {
-          const job = jobs.find(j => j.id === pendingAttachJobId);
-          if (job) {
-            job.proofImage = compressed;
-            job.updatedAt = Date.now();
-            saveLocalJobs();
-            renderJobs();
-            broadcastMessage({
-              type: 'JOB_UPSERT',
-              sender: currentUserId,
-              job: job
-            });
-            showToast('പ്രൂഫ് ചിത്രം ചേർത്തു', 'success');
-          }
-          closeAttachImageModal();
-        });
-      };
-      reader.readAsDataURL(fileInput.files[0]);
-    };
-
     window.toggleSecretVisibility = function() {
       isCodeVisible = !isCodeVisible;
       updateChannelLabelDisplay();
@@ -1115,13 +1040,8 @@
     function updateChannelLabelDisplay() {
       const label = document.getElementById('channelCodeDisplay');
       if (!label) return;
-      if (!factorySyncChannel) {
-        label.innerText = 'നൽകിയിട്ടില്ല';
-        label.className = 'font-mono font-bold text-rose-400 tracking-wider text-[11px] bg-slate-800 px-2 py-0.5 rounded border border-slate-700';
-      } else {
-        label.className = 'font-mono font-bold text-emerald-400 tracking-wider text-[11px] bg-slate-800 px-2 py-0.5 rounded border border-slate-700';
-        label.innerText = isCodeVisible ? factorySyncChannel : '••••••••';
-      }
+      label.className = 'font-mono font-bold text-emerald-400 tracking-wider text-[11px] bg-slate-800 px-2 py-0.5 rounded border border-slate-700';
+      label.innerText = isCodeVisible ? factorySyncChannel : '••••••••';
     }
 
     window.handleInitialCodeSubmit = function(e) {
@@ -1218,6 +1138,7 @@
         jobId: jId
       });
 
+      broadcastRetainedSnapshot();
       showToast('ഓർഡർ നീക്കം ചെയ്തു', 'warning');
     };
 
@@ -1275,7 +1196,7 @@
       if (!badge || !text) return;
       if (isConnected) {
         badge.className = 'text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-semibold flex items-center gap-1.5';
-        text.innerText = '40+ ലൈവ് കണക്ടഡ്';
+        text.innerText = '40+ ക്ലൗഡ് കണക്റ്റഡ്';
       } else {
         badge.className = 'text-[10px] sm:text-xs px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/30 font-semibold flex items-center gap-1.5';
         text.innerText = 'ഓഫ്‌ലൈൻ';
@@ -1288,7 +1209,7 @@
         return;
       }
 
-      const headers = ['Job ID', 'Type', 'Title', 'Client', 'Quantity', 'Delivery Date', 'Product Status', 'Stages Completed', 'Created Time'];
+      const headers = ['Job ID', 'Type', 'Title', 'Client', 'Quantity', 'Delivery Date', 'Product Status', 'Stages Completed', 'Notes', 'Created Time'];
       
       const rows = jobs.map(j => {
         const completed = isJobCompleted(j);
@@ -1304,6 +1225,7 @@
           `"${j.deliveryDate || ''}"`,
           `"${completed ? 'COMPLETED' : 'PENDING'}"`,
           `"${doneList}"`,
+          `"${(j.notes || '').replace(/"/g, '""')}"`,
           `"${new Date(j.createdAt).toLocaleString('en-IN')}"`
         ];
       });
@@ -1406,3 +1328,4 @@
   </script>
 </body>
 </html>
+```
