@@ -1,1322 +1,1573 @@
+
 <!DOCTYPE html>
 <html lang="ml">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>PrintoTrack Production System</title>
-​<!-- Realtime Sync Engine Only -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
-​<style>
-/* 100% PURE BUILT-IN CSS - ZERO EXTERNAL CSS DEPENDENCIES */
-*, *::before, *::after {
-box-sizing: border-box;
-margin: 0;
-padding: 0;
--webkit-tap-highlight-color: transparent;
-}
-​html, body {
-background-color: #030712 !important;
-color: #f3f4f6 !important;
-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-min-height: 100vh;
-display: flex;
-flex-direction: column;
-}
-​/* Modals Control */
-.app-modal {
-display: none;
-position: fixed;
-inset: 0;
-z-index: 9999;
-background: rgba(3, 7, 18, 0.85);
-backdrop-filter: blur(6px);
--webkit-backdrop-filter: blur(6px);
-align-items: center;
-justify-content: center;
-padding: 16px;
-}
-​.app-modal.active {
-display: flex !important;
-}
-​.modal-card {
-background: #0f172a;
-border: 1px solid #1e293b;
-border-radius: 18px;
-width: 100%;
-max-width: 420px;
-box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
-overflow: hidden;
-color: #f8fafc;
-}
-​/* Lights */
-.light-green {
-width: 16px;
-height: 16px;
-border-radius: 50%;
-background: radial-gradient(circle, #10b981 0%, #047857 100%);
-box-shadow: 0 0 14px #10b981, 0 0 24px rgba(16, 185, 129, 0.5);
-animation: pulse-green 1.8s infinite;
-flex-shrink: 0;
-}
-​@keyframes pulse-green {
-0%, 100% { transform: scale(1); box-shadow: 0 0 10px #10b981; }
-50% { transform: scale(1.1); box-shadow: 0 0 20px #34d399; }
-}
-​.light-red {
-width: 16px;
-height: 16px;
-border-radius: 50%;
-background: radial-gradient(circle, #f43f5e 0%, #be123c 100%);
-box-shadow: 0 0 14px #f43f5e, 0 0 24px rgba(244, 63, 94, 0.5);
-animation: pulse-red 1.8s infinite;
-flex-shrink: 0;
-}
-​@keyframes pulse-red {
-0%, 100% { transform: scale(1); box-shadow: 0 0 10px #f43f5e; }
-50% { transform: scale(1.1); box-shadow: 0 0 20px #fb7185; }
-}
-​/* Header & Nav */
-.header-bar {
-position: sticky;
-top: 0;
-z-index: 100;
-background: #0f172a;
-border-bottom: 1px solid #1e293b;
-}
-​.header-content {
-max-width: 1200px;
-margin: 0 auto;
-padding: 12px 16px;
-display: flex;
-flex-wrap: wrap;
-align-items: center;
-justify-content: space-between;
-gap: 12px;
-}
-​.brand-wrap {
-display: flex;
-align-items: center;
-gap: 10px;
-}
-​.brand-icon {
-width: 38px;
-height: 38px;
-border-radius: 10px;
-background: linear-gradient(135deg, #10b981, #06b6d4);
-display: flex;
-align-items: center;
-justify-content: center;
-font-size: 20px;
-color: #030712;
-box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-}
-​.brand-title {
-font-size: 18px;
-font-weight: 800;
-color: #ffffff;
-letter-spacing: -0.5px;
-}
-​.brand-title span {
-color: #10b981;
-}
-​.sub-bar {
-max-width: 1200px;
-margin: 0 auto;
-padding: 10px 16px;
-border-top: 1px solid rgba(30, 41, 59, 0.7);
-display: flex;
-flex-wrap: wrap;
-align-items: center;
-justify-content: space-between;
-gap: 10px;
-}
-​/* Buttons */
-.btn {
-padding: 8px 14px;
-border-radius: 10px;
-font-size: 12px;
-font-weight: 700;
-border: 1px solid transparent;
-cursor: pointer;
-display: inline-flex;
-align-items: center;
-gap: 6px;
-transition: all 0.15s ease;
-color: #f8fafc;
-text-decoration: none;
-}
-​.btn:active {
-transform: scale(0.97);
-}
-​.btn-emerald {
-background: linear-gradient(135deg, #10b981, #059669);
-color: #030712 !important;
-font-weight: 800;
-box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
-}
-​.btn-dark {
-background: #1e293b;
-color: #e2e8f0;
-border: 1px solid #334155;
-}
-​.btn-admin-active {
-background: rgba(245, 158, 11, 0.18);
-color: #fbbf24 !important;
-border: 1px solid rgba(245, 158, 11, 0.5);
-}
-​/* Filters */
-.filter-group {
-display: flex;
-background: #0b0f19;
-padding: 3px;
-border-radius: 10px;
-border: 1px solid #1e293b;
-gap: 3px;
-}
-​.filter-btn {
-padding: 6px 10px;
-border-radius: 7px;
-font-size: 11px;
-font-weight: 600;
-color: #94a3b8;
-background: transparent;
-border: none;
-cursor: pointer;
-}
-​.filter-btn.active {
-background: #10b981;
-color: #030712 !important;
-font-weight: 800;
-}
-​.filter-btn.active-dark {
-background: #1e293b;
-color: #10b981;
-font-weight: 700;
-}
-​.search-box {
-background: #0b0f19;
-border: 1px solid #1e293b;
-border-radius: 10px;
-padding: 7px 12px;
-font-size: 12px;
-color: #e2e8f0;
-outline: none;
-width: 100%;
-max-width: 220px;
-}
-​.search-box:focus {
-border-color: #10b981;
-}
-​/* Main Container */
-.main-wrap {
-max-width: 1200px;
-width: 100%;
-margin: 0 auto;
-padding: 16px;
-flex: 1;
-}
-​.role-banner {
-padding: 10px 14px;
-border-radius: 12px;
-background: #0f172a;
-border: 1px solid #1e293b;
-display: flex;
-align-items: center;
-justify-content: space-between;
-font-size: 12px;
-color: #94a3b8;
-margin-bottom: 16px;
-}
-​.role-banner.admin {
-background: rgba(245, 158, 11, 0.12);
-border-color: rgba(245, 158, 11, 0.4);
-color: #fde68a;
-}
-​/* Cards Grid */
-.jobs-grid {
-display: grid;
-grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-gap: 16px;
-}
-​.job-card {
-background: #0f172a;
-border: 1px solid #1e293b;
-border-radius: 16px;
-padding: 16px;
-display: flex;
-flex-direction: column;
-justify-content: space-between;
-box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-​.job-card.completed {
-border-color: rgba(16, 185, 129, 0.4);
-}
-​.badge-pill {
-font-size: 10px;
-font-weight: 700;
-padding: 3px 8px;
-border-radius: 9999px;
-display: inline-block;
-}
-​.badge-lanyard {
-background: rgba(99, 102, 241, 0.18);
-color: #a5b4fc;
-border: 1px solid rgba(99, 102, 241, 0.35);
-}
-​.badge-pvc {
-background: rgba(6, 182, 212, 0.18);
-color: #67e8f9;
-border: 1px solid rgba(6, 182, 212, 0.35);
-}
-​.status-panel {
-padding: 12px;
-border-radius: 12px;
-display: flex;
-align-items: center;
-justify-content: space-between;
-margin-top: 12px;
-}
-​.status-panel.green {
-background: rgba(6, 78, 59, 0.35);
-border: 1px solid rgba(16, 185, 129, 0.35);
-}
-​.status-panel.red {
-background: rgba(136, 19, 55, 0.35);
-border: 1px solid rgba(244, 63, 94, 0.35);
-}
-​.stages-grid {
-display: grid;
-grid-template-columns: repeat(2, 1fr);
-gap: 6px;
-margin-top: 12px;
-}
-​.stage-btn {
-padding: 8px 10px;
-border-radius: 10px;
-font-size: 11px;
-font-weight: 600;
-display: flex;
-align-items: center;
-justify-content: space-between;
-background: #0b0f19;
-border: 1px solid #1e293b;
-color: #94a3b8;
-cursor: pointer;
-transition: all 0.1s;
-}
-​.stage-btn.done {
-background: rgba(16, 185, 129, 0.18);
-border-color: rgba(16, 185, 129, 0.6);
-color: #6ee7b7;
-font-weight: 700;
-}
-​.form-input {
-width: 100%;
-padding: 9px 12px;
-background: #0b0f19;
-border: 1px solid #334155;
-border-radius: 10px;
-font-size: 12px;
-color: #f8fafc;
-outline: none;
-}
-​.form-input:focus {
-border-color: #10b981;
-}
-​/* Toast */
-#toast {
-display: none;
-position: fixed;
-bottom: 24px;
-right: 24px;
-z-index: 10000;
-padding: 10px 16px;
-border-radius: 12px;
-background: #0f172a;
-border: 1px solid #334155;
-color: #ffffff;
-font-size: 12px;
-font-weight: 600;
-align-items: center;
-gap: 8px;
-box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
-}
-​#toast.show {
-display: flex !important;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PrintoTrack Production System</title>
+  
+  <!-- Standalone MQTT Library for Realtime Multi-Device Sync -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
+
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      background-color: #030712 !important;
+      color: #f3f4f6 !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Malayalam", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    .light-green {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #10b981 0%, #047857 100%);
+      box-shadow: 0 0 12px #10b981, 0 0 20px rgba(16, 185, 129, 0.6);
+      animation: pulse-green 1.8s infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse-green {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 10px #10b981; }
+      50% { transform: scale(1.15); box-shadow: 0 0 20px #34d399; }
+    }
+
+    .light-red {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #f43f5e 0%, #be123c 100%);
+      box-shadow: 0 0 12px #f43f5e, 0 0 20px rgba(244, 63, 94, 0.6);
+      animation: pulse-red 1.8s infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse-red {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 10px #f43f5e; }
+      50% { transform: scale(1.15); box-shadow: 0 0 20px #fb7185; }
+    }
+
+    .header-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: #0f172a;
+      border-bottom: 1px solid #1e293b;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #10b981, #06b6d4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: #030712;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-title span {
+      color: #10b981;
+    }
+
+    .sub-bar {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 10px 16px;
+      border-top: 1px solid rgba(30, 41, 59, 0.7);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      border: 1px solid transparent;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+      color: #f8fafc;
+      text-decoration: none;
+      user-select: none;
+    }
+
+    .btn:active {
+      transform: scale(0.96);
+    }
+
+    .btn-emerald {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #030712 !important;
+      font-weight: 800;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .btn-dark {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+    }
+
+    .btn-admin-active {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24 !important;
+      border: 1px solid rgba(245, 158, 11, 0.6);
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+    }
+
+    .filter-group {
+      display: flex;
+      background: #0b0f19;
+      padding: 3px;
+      border-radius: 10px;
+      border: 1px solid #1e293b;
+      gap: 3px;
+    }
+
+    .filter-btn {
+      padding: 6px 10px;
+      border-radius: 7px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.1s ease;
+    }
+
+    .filter-btn.active {
+      background: #10b981;
+      color: #030712 !important;
+      font-weight: 800;
+    }
+
+    .filter-btn.active-dark {
+      background: #1e293b;
+      color: #10b981;
+      font-weight: 700;
+    }
+
+    .search-box {
+      background: #0b0f19;
+      border: 1px solid #1e293b;
+      border-radius: 10px;
+      padding: 7px 12px;
+      font-size: 12px;
+      color: #e2e8f0;
+      outline: none;
+      width: 100%;
+      max-width: 200px;
+      transition: border-color 0.2s;
+    }
+
+    .search-box:focus {
+      border-color: #10b981;
+    }
+
+    .main-wrap {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 16px;
+      flex: 1;
+    }
+
+    .role-banner {
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 16px;
+      gap: 8px;
+    }
+
+    .role-banner.admin {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.45);
+      color: #fde68a;
+    }
+
+    .jobs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .job-card {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 16px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      transition: transform 0.15s ease, border-color 0.2s ease;
+    }
+
+    .job-card.completed {
+      border-color: rgba(16, 185, 129, 0.5);
+    }
+
+    .badge-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      display: inline-block;
+    }
+
+    .badge-lanyard {
+      background: rgba(99, 102, 241, 0.18);
+      color: #a5b4fc;
+      border: 1px solid rgba(99, 102, 241, 0.35);
+    }
+
+    .badge-pvc {
+      background: rgba(6, 182, 212, 0.18);
+      color: #67e8f9;
+      border: 1px solid rgba(6, 182, 212, 0.35);
+    }
+
+    .status-panel {
+      padding: 12px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+    }
+
+    .status-panel.green {
+      background: rgba(6, 78, 59, 0.35);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .status-panel.red {
+      background: rgba(136, 19, 55, 0.35);
+      border: 1px solid rgba(244, 63, 94, 0.4);
+    }
+
+    .stages-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .stage-btn {
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #0b0f19;
+      border: 1px solid #1e293b;
+      color: #94a3b8;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .stage-btn:hover {
+      border-color: #334155;
+    }
+
+    .stage-btn.done {
+      background: rgba(16, 185, 129, 0.18);
+      border-color: rgba(16, 185, 129, 0.6);
+      color: #6ee7b7;
+      font-weight: 700;
+    }
+
+    .app-modal {
+      display: none !important;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(3, 7, 18, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .app-modal.active {
+      display: flex !important;
+    }
+
+    .modal-card {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 18px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.85);
+      overflow: hidden;
+      color: #f8fafc;
+      animation: modal-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modal-pop {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 9px 12px;
+      background: #0b0f19;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      font-size: 12px;
+      color: #f8fafc;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-input:focus {
+      border-color: #10b981;
+    }
+
+    #toast {
+      display: none;
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 10000;
+      padding: 10px 16px;
+      border-radius: 12px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 600;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    }
+
+    #toast.show {
+      display: flex !important;
+      animation: toast-in 0.2s ease;
+    }
+
+    @keyframes toast-in {
+      from { transform: translateY(12px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  </style>
 </head>
 <body>
-​<!-- Main Header -->
-<header class="header-bar">
-<div class="header-content">
-<div class="brand-wrap">
-<div class="brand-icon">⚙️</div>
-<div>
-<div style="display: flex; align-items: center; gap: 8px;">
-<h1 class="brand-title">PRINTO<span>TRACK</span></h1>
-<span id="syncBadge" style="font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #1e293b; color: #94a3b8; border: 1px solid #334155;">
-<span id="syncDot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#64748b; margin-right:4px;"></span>
-<span id="syncBadgeText">സിങ്ക് പരിശോധിക്കുന്നു...</span>
-</span>
-</div>
-<div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #94a3b8; margin-top: 2px;">
-<span>ഫാക്ടറി:</span>
-<span id="channelCodeDisplay" style="font-family: monospace; font-weight: bold; color: #10b981; background: #1e293b; padding: 1px 6px; border-radius: 4px; border: 1px solid #334155;">
-••••••••
-</span>
-<button onclick="toggleSecretVisibility()" style="background:none; border:none; color:#94a3b8; cursor:pointer;" title="കാണുക/മറയ്ക്കുക">👁</button>
-<button onclick="handleChannelSettingsClick()" style="background:none; border:none; color:#94a3b8; cursor:pointer;" title="സെറ്റിംഗ്സ്">⚙️</button>
-</div>
-</div>
-</div>
-​<div style="display: flex; align-items: center; gap: 8px;">
-<button id="adminRoleBtn" onclick="toggleAdminLoginModal()" class="btn btn-dark">
-<span id="adminRoleIcon">🔒</span>
-<span id="adminRoleText">അഡ്മിൻ ലോഗിൻ</span>
-</button>
-​<button onclick="exportToExcel()" class="btn btn-dark">
-<span>📊</span>
-<span>എക്സൽ</span>
-</button>
-​<button onclick="handleNewJobClick()" class="btn btn-emerald">
-<span style="font-size: 15px; font-weight: 900;">+</span>
-<span>പുതിയ ജോബ്</span>
-</button>
-</div>
-</div>
-​<!-- Filters Bar -->
-<div class="sub-bar">
-<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
-<div class="filter-group">
-<button id="typeBtn-all" onclick="setTypeFilter('all')" class="filter-btn active">എല്ലാം</button>
-<button id="typeBtn-lanyard" onclick="setTypeFilter('lanyard')" class="filter-btn">🧵 ലന്യാർഡ്</button>
-<button id="typeBtn-pvc" onclick="setTypeFilter('pvc')" class="filter-btn">💳 പിവിസി കാർഡ്</button>
-</div>
-​<div class="filter-group">
-<button id="statusBtn-all" onclick="setStatusFilter('all')" class="filter-btn active-dark">എല്ലാ സ്റ്റാറ്റസും</button>
-<button id="statusBtn-pending" onclick="setStatusFilter('pending')" class="filter-btn">🔴 പെൻഡിംഗ്</button>
-<button id="statusBtn-completed" onclick="setStatusFilter('completed')" class="filter-btn">🟢 പൂർത്തിയായി</button>
-</div>
-</div>
-​<div style="display: flex; align-items: center; gap: 8px;">
-<input type="text" id="searchInput" oninput="renderJobs()" placeholder="🔍 തിരയുക..." class="search-box">
-<span style="font-size: 11px; font-weight: bold; background: #0f172a; padding: 6px 10px; border-radius: 8px; border: 1px solid #1e293b; color: #94a3b8;">
-ആകെ: <span id="totalJobsCount" style="color: #10b981; font-family: monospace;">0</span>
-</span>
-</div>
-</div>
-</header>
-​<!-- Content Container -->
-<main class="main-wrap">
-​<div id="roleBanner" class="role-banner">
-<div style="display: flex; align-items: center; gap: 8px;">
-<span id="roleBannerIcon" style="font-size: 16px;">👁️</span>
-<span id="roleBannerText">സാധാരണ മോഡ്: മാറ്റങ്ങൾ കാണാൻ മാത്രം സാധിക്കും. എഡിറ്റ് ചെയ്യാൻ അഡ്മിൻ ലോഗിൻ ചെയ്യുക.</span>
-</div>
-<button id="roleBannerAction" onclick="toggleAdminLoginModal()" style="background:none; border:none; color:#10b981; font-weight:bold; cursor:pointer; text-decoration:underline; font-size:11px;">
-അഡ്മിൻ കോഡ് നൽകുക
-</button>
-</div>
-​<div id="jobsGrid" class="jobs-grid"></div>
-​<div id="emptyState" style="display:none; text-align:center; padding: 60px 16px;">
-<div style="width: 60px; height: 60px; border-radius: 16px; background:#0f172a; border:1px solid #1e293b; display:flex; align-items:center; justify-content:center; font-size:26px; margin:0 auto 12px auto;">
-📦
-</div>
-<h3 style="font-size: 15px; font-weight: 700; color: #cbd5e1;">ജോബുകൾ ഒന്നും ചേർത്തിട്ടില്ല</h3>
-<p style="font-size: 12px; color: #64748b; margin-top: 4px;">പുതിയ ഓർഡർ ചേർക്കാൻ മുകളിലെ പച്ച ബട്ടൺ അമർത്തുക (അഡ്മിൻ മാത്രം).</p>
-<button onclick="handleNewJobClick()" class="btn btn-emerald" style="margin-top: 14px;">
-+ പുതിയ ജോബ് ചേർക്കുക
-</button>
-</div>
-​</main>
-​<!-- Modals -->
-​<!-- 1. Factory Code Entry Modal -->
-<div id="factoryLockModal" class="app-modal">
-<div class="modal-card" style="padding: 24px; text-align: center; max-width: 360px;">
-<div style="width: 50px; height: 50px; border-radius: 14px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981; display:flex; align-items:center; justify-content:center; font-size: 24px; margin: 0 auto 14px auto;">
-🔒
-</div>
-<h3 style="font-size: 17px; font-weight: 800; color: #ffffff;">ഫാക്ടറി ആക്സസ് കോഡ്</h3>
-<p style="font-size: 12px; color: #94a3b8; margin: 6px 0 16px 0; line-height: 1.4;">
-നിങ്ങളുടെ സ്ഥാപനത്തിന്റെ പ്രൊഡക്ഷൻ ട്രാക്കർ തുറക്കാൻ സെക്യൂരിറ്റി കോഡ് ടൈപ്പ് ചെയ്യുക.
-</p>
-​<form onsubmit="handleInitialCodeSubmit(event)" style="text-align: left;">
-<label style="display: block; font-size: 11px; font-weight: 600; color: #cbd5e1; margin-bottom: 4px;">രഹസ്യ കോഡ് *</label>
-<div style="position: relative; margin-bottom: 14px;">
-<input 
-type="password" 
-id="initialAccessCodeInput" 
-required 
-placeholder="കോഡ് നൽകുക" 
-class="form-input" 
-style="font-family: monospace; text-transform: uppercase; color: #10b981; font-weight: bold; letter-spacing: 2px;"
->
-<button type="button" onclick="toggleInputSecret('initialAccessCodeInput', this)" style="position: absolute; right: 10px; top: 8px; background: none; border: none; color: #94a3b8; cursor: pointer;">👁️</button>
-</div>
-​<button type="submit" class="btn btn-emerald" style="width: 100%; justify-content: center; padding: 10px;">
-ട്രാക്കർ തുറക്കുക ➔
-</button>
-</form>
-</div>
-</div>
-​<!-- 2. Admin PIN Modal -->
-<div id="adminLoginModal" class="app-modal">
-<div class="modal-card" style="padding: 24px; text-align: center; max-width: 320px;">
-<div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; display:flex; align-items:center; justify-content:center; font-size: 22px; margin: 0 auto 12px auto;">
-👑
-</div>
-<h3 style="font-size: 16px; font-weight: 800; color: #ffffff;">അഡ്മിൻ ആക്സസ് PIN</h3>
-<p style="font-size: 11px; color: #94a3b8; margin: 4px 0 14px 0;">മാറ്റങ്ങൾ വരുത്താൻ മാനേജറുടെ രഹസ്യ PIN നൽകുക.</p>
-​<form onsubmit="handleAdminLoginSubmit(event)">
-<input 
-type="password" 
-id="adminPinInput" 
-required 
-placeholder="••••••" 
-class="form-input" 
-style="text-align: center; font-family: monospace; letter-spacing: 4px; font-size: 16px; color: #10b981; margin-bottom: 14px;"
->
-<div style="display: flex; gap: 8px;">
-<button type="button" onclick="closeAdminLoginModal()" class="btn btn-dark" style="flex: 1; justify-content: center;">റദ്ദാക്കുക</button>
-<button type="submit" class="btn btn-emerald" style="flex: 1; justify-content: center;">അൺലോക്ക്</button>
-</div>
-</form>
-</div>
-</div>
-​<!-- 3. New Job Modal -->
-<div id="newJobModal" class="app-modal">
-<div class="modal-card" style="max-height: 90vh; display: flex; flex-direction: column;">
-<div style="padding: 14px 18px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between;">
-<h3 style="font-size: 14px; font-weight: 800; color: #ffffff;">📝 പുതിയ പ്രൊഡക്ഷൻ ഓർഡർ</h3>
-<button onclick="closeNewJobModal()" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;">✕</button>
-</div>
-​<form id="newJobForm" onsubmit="handleCreateJob(event)" style="padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
-​<div>
-<label style="display:block; font-size:11px; font-weight:700; color:#cbd5e1; margin-bottom:6px;">പ്രൊഡക്റ്റ് ടൈപ്പ് *</label>
-<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-<label style="display: flex; align-items: center; gap: 8px; background: #0b0f19; border: 1px solid #334155; padding: 10px; border-radius: 10px; cursor: pointer;">
-<input type="radio" name="jobType" value="lanyard" checked style="accent-color: #10b981;">
-<div>
-<div style="font-size: 12px; font-weight: 700; color: #ffffff;">🧵 ലന്യാർഡ്</div>
-<div style="font-size: 10px; color: #94a3b8;">8 ഘട്ടങ്ങൾ</div>
-</div>
-</label>
-​<label style="display: flex; align-items: center; gap: 8px; background: #0b0f19; border: 1px solid #334155; padding: 10px; border-radius: 10px; cursor: pointer;">
-<input type="radio" name="jobType" value="pvc" style="accent-color: #10b981;">
-<div>
-<div style="font-size: 12px; font-weight: 700; color: #ffffff;">💳 പിവിസി കാർഡ്</div>
-<div style="font-size: 10px; color: #94a3b8;">5 ഘട്ടങ്ങൾ</div>
-</div>
-</label>
-</div>
-</div>
-​<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-<div>
-<label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">ജോബ് പേര് *</label>
-<input type="text" id="jobTitle" required placeholder="e.g. ABC College ID" class="form-input">
-</div>
-<div>
-<label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">ക്ലയന്റ് / സ്ഥാപനം</label>
-<input type="text" id="jobClient" placeholder="e.g. Media Wings" class="form-input">
-</div>
-</div>
-​<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-<div>
-<label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">എണ്ണം (Quantity)</label>
-<input type="number" id="jobQuantity" placeholder="500" class="form-input">
-</div>
-<div>
-<label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">ഡെലിവറി തീയതി</label>
-<input type="date" id="jobDelivery" class="form-input">
-</div>
-</div>
-​<div>
-<label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">പ്രൂഫ് ചിത്രം (Proof Image)</label>
-<div style="border: 2px dashed #334155; border-radius: 10px; padding: 12px; text-align: center; position: relative; background: #0b0f19;">
-<input type="file" id="jobImageInput" accept="image/*" onchange="handleImageSelection(event)" style="position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;">
-<div id="imageUploadPlaceholder">
-<span style="font-size: 20px;">📷</span>
-<div style="font-size: 11px; color: #cbd5e1; margin-top: 2px;">ചിത്രം തിരഞ്ഞെടുക്കുക</div>
-</div>
-<div id="imagePreviewContainer" style="display: none; align-items: center; justify-content: center; gap: 10px;">
-<img id="imagePreview" src="" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid #10b981;">
-<button type="button" onclick="clearSelectedImage(event)" style="background: none; border: none; color: #f43f5e; font-size: 11px; text-decoration: underline; cursor: pointer;">ഒഴിവാക്കുക</button>
-</div>
-</div>
-</div>
-​<div>
-<label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">കുറിപ്പ് (Notes)</label>
-<textarea id="jobNotes" rows="2" placeholder="നിർദ്ദേശങ്ങൾ, പ്രത്യേകതകൾ..." class="form-input" style="resize: none;"></textarea>
-</div>
-​<div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #1e293b; padding-top: 10px;">
-<button type="button" onclick="closeNewJobModal()" class="btn btn-dark">റദ്ദാക്കുക</button>
-<button type="submit" class="btn btn-emerald">ഓർഡർ സേവ് ചെയ്യുക</button>
-</div>
-​</form>
-</div>
-</div>
-​<!-- 4. Channel Settings Modal -->
-<div id="channelSettingsModal" class="app-modal">
-<div class="modal-card" style="padding: 20px; max-width: 340px;">
-<h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">⚙️ ഫാക്ടറി കോഡ് മാറ്റുക</h4>
-<p style="font-size: 11px; color: #94a3b8; margin-bottom: 12px;">ജീവനക്കാർ കണക്റ്റ് ചെയ്യുന്ന രഹസ്യ സിങ്ക് കോഡ് ഇവിടെ മാറ്റാം.</p>
-​<div style="position: relative; margin-bottom: 14px;">
-<input type="password" id="inputCustomChannel" class="form-input" style="font-family: monospace; text-transform: uppercase; color: #10b981; font-weight: bold;">
-<button type="button" onclick="toggleInputSecret('inputCustomChannel', this)" style="position: absolute; right: 10px; top: 8px; background: none; border: none; color: #94a3b8; cursor: pointer;">👁️</button>
-</div>
-​<div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #1e293b; padding-top: 10px;">
-<button onclick="logoutFactoryCode()" style="background: none; border: none; color: #f43f5e; font-size: 11px; text-decoration: underline; cursor: pointer;">ആപ്പ് ലോക്ക് ചെയ്യുക</button>
-<div style="display: flex; gap: 6px;">
-<button onclick="closeChannelModal()" class="btn btn-dark" style="padding: 6px 10px;">ക്ലോസ്</button>
-<button onclick="saveChannelModal()" class="btn btn-emerald" style="padding: 6px 12px;">സേവ്</button>
-</div>
-</div>
-</div>
-</div>
-​<!-- 5. Delete Confirm Modal -->
-<div id="deleteConfirmModal" class="app-modal">
-<div class="modal-card" style="padding: 20px; text-align: center; max-width: 300px;">
-<div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.4); color: #f43f5e; display:flex; align-items:center; justify-content:center; font-size: 20px; margin: 0 auto 10px auto;">
-🗑
-</div>
-<h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 4px;">ഈ ജോബ് ഒഴിവാക്കണമോ?</h4>
-<p style="font-size: 11px; color: #94a3b8; margin-bottom: 14px;">ഇത് എല്ലാ ഫോണുകളിൽ നിന്നും ഒഴിവാക്കപ്പെടും.</p>
-​<div style="display: flex; gap: 8px;">
-<button onclick="closeDeleteModal()" class="btn btn-dark" style="flex: 1; justify-content: center;">വേണ്ട</button>
-<button onclick="executeDeleteJob()" class="btn" style="flex: 1; justify-content: center; background: #e11d48; color: #ffffff;">കളയുക</button>
-</div>
-</div>
-</div>
-​<!-- 6. Lightbox Modal -->
-<div id="imageLightboxModal" class="app-modal" onclick="closeLightbox()">
-<div style="position: relative; max-width: 90vw; max-height: 85vh;" onclick="event.stopPropagation()">
-<button onclick="closeLightbox()" style="position: absolute; top: -35px; right: 0; background: #1e293b; color: #ffffff; border: none; padding: 4px 10px; border-radius: 20px; font-size: 11px; cursor: pointer;">✕ ക്ലോസ്</button>
-<img id="lightboxImage" src="" style="max-width: 100%; max-height: 80vh; border-radius: 12px; border: 1px solid #334155; object-fit: contain;">
-<div id="lightboxCaption" style="text-align: center; font-size: 12px; color: #e2e8f0; margin-top: 6px;"></div>
-</div>
-</div>
-​<!-- Notification Toast -->
-<div id="toast">
-<span id="toastIcon">🔔</span>
-<span id="toastMessage">അറിയിപ്പ്</span>
-</div>
-​<script>
-// Stage configurations
-const LANYARD_STAGES = [
-{ id: 'confirmation', name: 'Confirmation', icon: '📝' },
-{ id: 'printing',     name: 'Printing',     icon: '🖨' },
-{ id: 'fusing',       name: 'Fusing',       icon: '⚡' },
-{ id: 'cutting',      name: 'Cutting',      icon: '✂' },
-{ id: 'stitching',    name: 'Stitching',    icon: '🧵' },
-{ id: 'clamping',     name: 'Clamping',     icon: '🗜️' },
-{ id: 'punching',     name: 'Punching',     icon: '🔘' },
-{ id: 'packing',      name: 'Packing',      icon: '📦' }
-];
-​const PVC_STAGES = [
-{ id: 'confirmation',      name: 'Confirmation',        icon: '📝' },
-{ id: 'scoring_soldering', name: 'Scoring / Soldering', icon: '⚡' },
-{ id: 'fusing',            name: 'Fusing',               icon: '🔥' },
-{ id: 'cutting',           name: 'Cutting',              icon: '✂️' },
-{ id: 'packing',           name: 'Packing',              icon: '📦' }
-];
-​// Local Storage Helpers
-function safeGet(key, defVal = '') {
-try { const v = localStorage.getItem(key); return v !== null ? v : defVal; } catch(e) { return defVal; }
-}
-function safeSet(key, val) {
-try { localStorage.setItem(key, val); } catch(e) {}
-}
-function safeSessionGet(key, defVal = '') {
-try { const v = sessionStorage.getItem(key); return v !== null ? v : defVal; } catch(e) { return defVal; }
-}
-function safeSessionSet(key, val) {
-try { sessionStorage.setItem(key, val); } catch(e) {}
-}
-​let currentUserId = getOrCreateUserId();
-const DEFAULT_FACTORY_PASS = 'PRINTO';
-let factorySyncChannel = safeGet('prod_factory_channel', '');
-let isCodeVisible = false;
-let currentTypeFilter = 'all';
-let currentStatusFilter = 'all';
-​let isAdmin = safeSessionGet('prod_is_admin') === 'true';
-const STORED_ADMIN_PIN = '2026';
-​let jobs = [];
-let tempNewJobImage = null;
-let pendingDeleteId = null;
-let mqttClient = null;
-​function getOrCreateUserId() {
-let id = safeGet('prod_user_id');
-if (!id) {
-id = 'u_' + Math.random().toString(36).substring(2, 7);
-safeSet('prod_user_id', id);
-}
-return id;
-}
-​function getStorageKey() {
-return prod_data_${factorySyncChannel || DEFAULT_FACTORY_PASS};
-}
-​function loadLocalJobs() {
-try {
-const raw = safeGet(getStorageKey());
-if (raw) {
-const parsed = JSON.parse(raw);
-if (Array.isArray(parsed)) return parsed;
-}
-} catch (err) {}
-return [];
-}
-​function saveLocalJobs() {
-try { safeSet(getStorageKey(), JSON.stringify(jobs)); } catch(err) {}
-}
-​function updateRoleUI() {
-const btn = document.getElementById('adminRoleBtn');
-const icon = document.getElementById('adminRoleIcon');
-const text = document.getElementById('adminRoleText');
-const banner = document.getElementById('roleBanner');
-const bannerIcon = document.getElementById('roleBannerIcon');
-const bannerText = document.getElementById('roleBannerText');
-const bannerAction = document.getElementById('roleBannerAction');
-​if (isAdmin) {
-if (btn) btn.className = 'btn btn-admin-active';
-if (icon) icon.innerText = '👑';
-if (text) text.innerText = 'അഡ്മിൻ (ലോഗൗട്ട്)';
-if (banner) banner.className = 'role-banner admin';
-if (bannerIcon) bannerIcon.innerText = '👑';
-if (bannerText) bannerText.innerText = 'അഡ്മിൻ മോഡ് ഓൺ: ഓർഡറുകൾ ചേർക്കാനും മാറ്റാനും പൂർണ്ണ അനുമതിയുണ്ട്.';
-if (bannerAction) {
-bannerAction.innerText = 'ലോഗൗട്ട് ചെയ്യുക';
-bannerAction.style.color = '#f43f5e';
-}
-} else {
-if (btn) btn.className = 'btn btn-dark';
-if (icon) icon.innerText = '🔒';
-if (text) text.innerText = 'അഡ്മിൻ ലോഗിൻ';
-if (banner) banner.className = 'role-banner';
-if (bannerIcon) bannerIcon.innerText = '👁️';
-if (bannerText) bannerText.innerText = 'സാധാരണ മോഡ്: മാറ്റങ്ങൾ കാണാൻ മാത്രം സാധിക്കും. എഡിറ്റ് ചെയ്യാൻ അഡ്മിൻ ലോഗിൻ ചെയ്യുക.';
-if (bannerAction) {
-bannerAction.innerText = 'അഡ്മിൻ കോഡ് നൽകുക';
-bannerAction.style.color = '#10b981';
-}
-}
-}
-​window.toggleAdminLoginModal = function() {
-if (isAdmin) {
-isAdmin = false;
-safeSessionSet('prod_is_admin', 'false');
-updateRoleUI();
-renderJobs();
-showToast('അഡ്മിൻ മോഡ് ലോഗൗട്ട് ചെയ്തു (View-Only)', 'warning');
-} else {
-document.getElementById('adminPinInput').value = '';
-openModal('adminLoginModal');
-}
-};
-​window.closeAdminLoginModal = function() {
-closeModal('adminLoginModal');
-};
-​window.handleAdminLoginSubmit = function(e) {
-e.preventDefault();
-const pin = document.getElementById('adminPinInput').value.trim();
-if (pin === STORED_ADMIN_PIN) {
-isAdmin = true;
-safeSessionSet('prod_is_admin', 'true');
-closeAdminLoginModal();
-updateRoleUI();
-renderJobs();
-showToast('അഡ്മിൻ ആക്സസ് അൺലോക്ക് ആയി! 🎉', 'success');
-} else {
-showToast('തെറ്റായ അഡ്മിൻ കോഡ്! വീണ്ടും ശ്രമിക്കുക.', 'warning');
-}
-};
-​function requireAdminPermission() {
-if (!isAdmin) {
-showToast('മാറ്റങ്ങൾ വരുത്താൻ അഡ്മിൻ കോഡ് നൽകുക!', 'warning');
-document.getElementById('adminPinInput').value = '';
-openModal('adminLoginModal');
-return false;
-}
-return true;
-}
-​window.handleNewJobClick = function() {
-if (requireAdminPermission()) {
-openNewJobModal();
-}
-};
-​function openModal(id) {
-const el = document.getElementById(id);
-if (el) {
-el.classList.add('active');
-}
-}
-​function closeModal(id) {
-const el = document.getElementById(id);
-if (el) {
-el.classList.remove('active');
-}
-}
-​function initRealtimeSync() {
-updateChannelLabelDisplay();
-​if (!factorySyncChannel) {
-openModal('factoryLockModal');
-updateSyncBadge(false);
-return;
-} else {
-closeModal('factoryLockModal');
-}
-​if (typeof mqtt === 'undefined') {
-updateSyncBadge(false);
-return;
-}
-​const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
-const clientId = 'w_' + currentUserId + '_' + Math.random().toString(16).substring(2, 6);
-​try {
-if (mqttClient) {
-try { mqttClient.end(true); } catch(e){}
-}
-​mqttClient = mqtt.connect(brokerUrl, {
-clientId: clientId,
-clean: true,
-connectTimeout: 5000,
-reconnectPeriod: 5000
-});
-​const topic = factory/prod_v10/${factorySyncChannel};
-​mqttClient.on('connect', () => {
-updateSyncBadge(true);
-mqttClient.subscribe(topic, { qos: 1 });
-​broadcastMessage({
-type: 'STATE_REQUEST',
-sender: currentUserId
-});
-​if (jobs.length > 0) {
-broadcastRetainedSnapshot();
-}
-});
-​mqttClient.on('message', (t, payload) => {
-try {
-const data = JSON.parse(payload.toString());
-if (!data || data.sender === currentUserId) return;
-handleIncomingBroadcast(data);
-} catch (e) {}
-});
-​mqttClient.on('error', () => updateSyncBadge(false));
-mqttClient.on('close', () => updateSyncBadge(false));
-​} catch (err) {
-updateSyncBadge(false);
-}
-}
-​function broadcastMessage(payloadObj, retain = false) {
-if (mqttClient && mqttClient.connected) {
-try {
-const topic = factory/prod_v10/${factorySyncChannel};
-mqttClient.publish(topic, JSON.stringify(payloadObj), { qos: 1, retain: retain });
-} catch (e) {}
-}
-}
-​function broadcastRetainedSnapshot() {
-broadcastMessage({
-type: 'STATE_SHARE',
-sender: currentUserId,
-jobs: jobs,
-timestamp: Date.now()
-}, true);
-}
-​function handleIncomingBroadcast(data) {
-if (data.type === 'STATE_REQUEST') {
-if (jobs.length > 0) {
-broadcastMessage({
-type: 'STATE_SHARE',
-sender: currentUserId,
-jobs: jobs,
-timestamp: Date.now()
-});
-}
-} else if (data.type === 'STATE_SHARE') {
-if (Array.isArray(data.jobs) && data.jobs.length > 0) {
-jobs = mergeJobsLists(jobs, data.jobs);
-saveLocalJobs();
-renderJobs();
-}
-} else if (data.type === 'JOB_UPSERT') {
-if (data.job && data.job.id) {
-const idx = jobs.findIndex(j => j.id === data.job.id);
-if (idx !== -1) {
-jobs[idx] = data.job;
-} else {
-jobs.unshift(data.job);
-}
-saveLocalJobs();
-renderJobs();
-showToast(തത്സമയ മാറ്റം: ${data.job.title}, 'info');
-}
-} else if (data.type === 'JOB_DELETE') {
-if (data.jobId) {
-jobs = jobs.filter(j => j.id !== data.jobId);
-saveLocalJobs();
-renderJobs();
-broadcastRetainedSnapshot();
-showToast('ഒരു ഓർഡർ നീക്കം ചെയ്യപ്പെട്ടു', 'warning');
-}
-}
-}
-​function mergeJobsLists(localList, remoteList) {
-const map = new Map();
-localList.forEach(j => map.set(j.id, j));
-remoteList.forEach(rj => {
-if (!map.has(rj.id)) {
-map.set(rj.id, rj);
-} else {
-const lj = map.get(rj.id);
-const lTime = lj.updatedAt || 0;
-const rTime = rj.updatedAt || 0;
-if (rTime >= lTime) {
-map.set(rj.id, rj);
-}
-}
-});
-return Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-}
-​function getJobStages(jobType) {
-return jobType === 'pvc' ? PVC_STAGES : LANYARD_STAGES;
-}
-​function isJobCompleted(job) {
-const stages = getJobStages(job.jobType);
-return stages.every(s => job.stages && job.stages[s.id] === true);
-}
-​function renderJobs() {
-const container = document.getElementById('jobsGrid');
-const emptyState = document.getElementById('emptyState');
-const searchVal = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
-​const filtered = jobs.filter(job => {
-if (currentTypeFilter !== 'all' && (job.jobType || 'lanyard') !== currentTypeFilter) {
-return false;
-}
-const completed = isJobCompleted(job);
-if (currentStatusFilter === 'pending' && completed) return false;
-if (currentStatusFilter === 'completed' && !completed) return false;
-​if (searchVal) {
-const matchTitle = (job.title || '').toLowerCase().includes(searchVal);
-const matchClient = (job.client || '').toLowerCase().includes(searchVal);
-const matchNotes = (job.notes || '').toLowerCase().includes(searchVal);
-const matchId = (job.id || '').toLowerCase().includes(searchVal);
-if (!matchTitle && !matchClient && !matchNotes && !matchId) return false;
-}
-return true;
-});
-​document.getElementById('totalJobsCount').innerText = filtered.length;
-​if (filtered.length === 0) {
-container.innerHTML = '';
-emptyState.style.display = 'block';
-return;
-} else {
-emptyState.style.display = 'none';
-}
-​container.innerHTML = filtered.map(job => {
-const completed = isJobCompleted(job);
-const stagesList = getJobStages(job.jobType);
-​let completedCount = 0;
-stagesList.forEach(s => {
-if (job.stages && job.stages[s.id]) completedCount++;
-});
-​const percent = Math.round((completedCount / stagesList.length) * 100);
-const isLanyard = (job.jobType || 'lanyard') === 'lanyard';
-​return `
-<div class="job-card ${completed ? 'completed' : ''}">
-​<div>
-<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
-<div style="flex: 1;">
-<div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
-<span class="badge-pill ${isLanyard ? 'badge-lanyard' : 'badge-pvc'}">
-{isLanyard ? '🧵 ലന്യാർഡ്' : '💳 പിവിസി കാർഡ്'}
-</span>
-<span style="font-size: 10px; font-family: monospace; color: #64748b;">#{job.id.substring(job.id.length - 5)}</span>
-</div>
-<h3 style="font-size: 15px; font-weight: 800; color: #ffffff; margin-top: 4px; line-height: 1.3;">{escapeHtml(job.title)}</h3>
-<div style="font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap;">
-<span>{job.client ? '🏢 ' + escapeHtml(job.client) : 'ക്ലയന്റ് വിവരമില്ല'}</span>
-${job.quantity ? <span>•</span><span>📦 ${job.quantity} pcs</span> : ''}
-</div>
-</div>
-​${isAdmin ? <button onclick="promptDeleteJob('${job.id}')" title="കളയുക" style="background: none; border: none; font-size: 15px; cursor: pointer; padding: 4px; color: #64748b;"> 🗑️ </button> : <span style="font-size: 12px; color: #475569;" title="കാണാൻ മാത്രം (View-Only)">🔒</span>}
-</div>
-​${job.notes ? <div style="margin-top: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); color: #fde68a; font-size: 11px; display: flex; gap: 6px;"> <span style="color: #fbbf24; font-weight: bold;">📌</span> <div style="line-height: 1.4; word-break: break-word;"> <span style="font-weight: bold; color: #fcd34d;">കുറിപ്പ്:</span> ${escapeHtml(job.notes)} </div> </div> : ''}
-​<div class="status-panel ${completed ? 'green' : 'red'}">
-<div style="display: flex; align-items: center; gap: 10px;">
-<div class="${completed ? 'light-green' : 'light-red'}"></div>
-<div>
-<div style="font-size: 9px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: ${completed ? '#34d399' : '#fb7185'};">
-PRODUCT STATUS
-</div>
-<div style="font-size: 11px; font-weight: 800; color: ${completed ? '#a7f3d0' : '#fecdd3'};">
-${completed ? '✓ പൂർത്തിയായി (COMPLETED)' : '⏳ പെൻഡിംഗ് (PENDING)'}
-</div>
-</div>
-</div>
-​<div>
-${job.proofImage ? <div onclick="openLightbox('${job.proofImage}', '${escapeHtml(job.title)}')" style="cursor: pointer;"> <img src="${job.proofImage}" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover; border: 1px solid #334155;"> </div> : ''}
-</div>
-</div>
-​<div style="margin-top: 12px;">
-<div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px; color: #94a3b8;">
-<span>ഘട്ടങ്ങൾ ({completedCount}/{stagesList.length})</span>
-<span style="font-weight: bold; font-family: monospace; color: ${completed ? '#34d399' : '#cbd5e1'};">${percent}%</span>
-</div>
-<div style="width: 100%; background: #0b0f19; border-radius: 99px; height: 6px; overflow: hidden; border: 1px solid #1e293b;">
-<div style="height: 100%; border-radius: 99px; transition: width 0.3s; background: ${completed ? '#10b981' : 'linear-gradient(90deg, #f59e0b, #10b981)'}; width: ${percent}%;"></div>
-</div>
-</div>
-​<div class="stages-grid">
-${stagesList.map(st => {
-const isDone = job.stages && job.stages[st.id] === true;
-return <button  onclick="handleStageToggleClick('${job.id}', '${st.id}')" class="stage-btn ${isDone ? 'done' : ''}" > <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 4px;"> <span>${st.icon}</span> <span>${st.name}</span> </span> <span style="font-weight: 800; font-size: 11px;">${isDone ? '✓' : '○'}</span> </button>;
-}).join('')}
-</div>
-​</div>
-​<div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(30, 41, 59, 0.7); display: flex; justify-content: space-between; font-size: 10px; color: #64748b;">
-<span>${job.deliveryDate ? '📅 ' + job.deliveryDate : 'തീയതിയില്ല'}</span>
-<span>അപ്‌‌ഡേറ്റ്: ${timeAgo(job.updatedAt)}</span>
-</div>
-​</div>
-`;
-}).join('');
-}
-​window.handleStageToggleClick = function(jobId, stageId) {
-if (!requireAdminPermission()) return;
-​const job = jobs.find(j => j.id === jobId);
-if (!job) return;
-​if (!job.stages) job.stages = {};
-job.stages[stageId] = !job.stages[stageId];
-job.updatedAt = Date.now();
-job.updatedBy = currentUserId;
-​saveLocalJobs();
-renderJobs();
-​broadcastMessage({
-type: 'JOB_UPSERT',
-sender: currentUserId,
-job: job
-});
-​broadcastRetainedSnapshot();
-​const done = job.stages[stageId];
-showToast(${job.title}: ${stageId} ${done ? 'പൂർത്തിയായി' : 'മാറ്റി'}, done ? 'success' : 'default');
-};
-​window.handleCreateJob = function(e) {
-e.preventDefault();
-if (!requireAdminPermission()) return;
-​const title = document.getElementById('jobTitle').value.trim();
-if (!title) return;
-​const jobType = document.querySelector('input[name="jobType"]:checked')?.value || 'lanyard';
-const client = document.getElementById('jobClient').value.trim();
-const quantity = document.getElementById('jobQuantity').value.trim();
-const deliveryDate = document.getElementById('jobDelivery').value;
-const notes = document.getElementById('jobNotes').value.trim();
-​const newJob = {
-id: 'job_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
-title: title,
-jobType: jobType,
-client: client,
-quantity: quantity,
-deliveryDate: deliveryDate,
-notes: notes,
-proofImage: tempNewJobImage || null,
-stages: {},
-createdAt: Date.now(),
-updatedAt: Date.now(),
-updatedBy: currentUserId
-};
-​jobs.unshift(newJob);
-saveLocalJobs();
-renderJobs();
-closeNewJobModal();
-​broadcastMessage({
-type: 'JOB_UPSERT',
-sender: currentUserId,
-job: newJob
-});
-​broadcastRetainedSnapshot();
-showToast(പുതിയ ജോബ് "${title}" ചേർത്തു!, 'success');
-};
-​window.handleImageSelection = function(e) {
-const file = e.target.files[0];
-if (!file) return;
-​const reader = new FileReader();
-reader.onload = function(evt) {
-compressBase64Image(evt.target.result, 700, 0.7, (compressedData) => {
-tempNewJobImage = compressedData;
-document.getElementById('imagePreview').src = compressedData;
-document.getElementById('imageUploadPlaceholder').style.display = 'none';
-document.getElementById('imagePreviewContainer').style.display = 'flex';
-});
-};
-reader.readAsDataURL(file);
-};
-​window.clearSelectedImage = function(e) {
-if (e) e.stopPropagation();
-tempNewJobImage = null;
-document.getElementById('jobImageInput').value = '';
-document.getElementById('imageUploadPlaceholder').style.display = 'block';
-document.getElementById('imagePreviewContainer').style.display = 'none';
-};
-​function compressBase64Image(src, maxWidth, quality, callback) {
-const img = new Image();
-img.crossOrigin = "anonymous";
-img.onload = function() {
-let width = img.width;
-let height = img.height;
-if (width > maxWidth) {
-height = Math.round((height * maxWidth) / width);
-width = maxWidth;
-}
-const canvas = document.createElement('canvas');
-canvas.width = width;
-canvas.height = height;
-const ctx = canvas.getContext('2d');
-ctx.drawImage(img, 0, 0, width, height);
-callback(canvas.toDataURL('image/jpeg', quality));
-};
-img.src = src;
-}
-​window.toggleSecretVisibility = function() {
-isCodeVisible = !isCodeVisible;
-updateChannelLabelDisplay();
-};
-​window.toggleInputSecret = function(inputId, btn) {
-const input = document.getElementById(inputId);
-if (!input) return;
-if (input.type === 'password') {
-input.type = 'text';
-btn.innerText = '🔒';
-} else {
-input.type = 'password';
-btn.innerText = '👁️';
-}
-};
-​function updateChannelLabelDisplay() {
-const label = document.getElementById('channelCodeDisplay');
-if (!label) return;
-label.innerText = isCodeVisible ? (factorySyncChannel || 'NONE') : '••••••••';
-}
-​window.handleInitialCodeSubmit = function(e) {
-e.preventDefault();
-const val = document.getElementById('initialAccessCodeInput').value.trim();
-if (!val) return;
-​const enteredCode = val.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
-const validCode = (safeGet('prod_factory_password', DEFAULT_FACTORY_PASS)).toUpperCase();
-​if (enteredCode !== validCode) {
-showToast('തെറ്റായ കോഡ്! ശരിയായ ഫാക്ടറി കോഡ് നൽകുക.', 'warning');
-return;
-}
-​factorySyncChannel = enteredCode;
-safeSet('prod_factory_channel', factorySyncChannel);
-​closeModal('factoryLockModal');
-jobs = loadLocalJobs();
-renderJobs();
-initRealtimeSync();
-showToast('ഫാക്ടറി കോഡ് കണക്റ്റ് ചെയ്തു!', 'success');
-};
-​window.handleChannelSettingsClick = function() {
-if (!requireAdminPermission()) return;
-openChannelModal();
-};
-​window.openChannelModal = function() {
-if (!requireAdminPermission()) return;
-document.getElementById('inputCustomChannel').value = factorySyncChannel || DEFAULT_FACTORY_PASS;
-openModal('channelSettingsModal');
-};
-​window.closeChannelModal = function() {
-closeModal('channelSettingsModal');
-};
-​window.saveChannelModal = function() {
-if (!requireAdminPermission()) return;
-const val = document.getElementById('inputCustomChannel').value.trim();
-if (val) {
-const cleanCode = val.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
-safeSet('prod_factory_password', cleanCode);
-factorySyncChannel = cleanCode;
-safeSet('prod_factory_channel', factorySyncChannel);
-closeChannelModal();
-jobs = loadLocalJobs();
-renderJobs();
-initRealtimeSync();
-showToast('ഫാക്ടറി കോഡ് അപ്‌‌ഡേറ്റ് ചെയ്തു!', 'info');
-}
-};
-​window.logoutFactoryCode = function() {
-if (!requireAdminPermission()) return;
-try { localStorage.removeItem('prod_factory_channel'); } catch(e){}
-factorySyncChannel = '';
-closeChannelModal();
-openModal('factoryLockModal');
-document.getElementById('initialAccessCodeInput').value = '';
-if (mqttClient) {
-try { mqttClient.end(true); } catch(e){}
-}
-updateSyncBadge(false);
-updateChannelLabelDisplay();
-showToast('ആപ്പ് ലോക്ക് ചെയ്തു', 'warning');
-};
-​window.promptDeleteJob = function(jobId) {
-if (!requireAdminPermission()) return;
-pendingDeleteId = jobId;
-openModal('deleteConfirmModal');
-};
-​window.closeDeleteModal = function() {
-pendingDeleteId = null;
-closeModal('deleteConfirmModal');
-};
-​window.executeDeleteJob = function() {
-if (!requireAdminPermission() || !pendingDeleteId) return;
-const jId = pendingDeleteId;
-jobs = jobs.filter(j => j.id !== jId);
-saveLocalJobs();
-renderJobs();
-closeDeleteModal();
-​broadcastMessage({
-type: 'JOB_DELETE',
-sender: currentUserId,
-jobId: jId
-});
-​broadcastRetainedSnapshot();
-showToast('ഓർഡർ നീക്കം ചെയ്തു', 'warning');
-};
-​window.openLightbox = function(imgSrc, caption) {
-document.getElementById('lightboxImage').src = imgSrc;
-document.getElementById('lightboxCaption').innerText = caption || '';
-openModal('imageLightboxModal');
-};
-​window.closeLightbox = function() {
-closeModal('imageLightboxModal');
-};
-​function openNewJobModal() {
-document.getElementById('newJobForm').reset();
-clearSelectedImage();
-openModal('newJobModal');
-}
-​window.closeNewJobModal = function() {
-closeModal('newJobModal');
-};
-​window.setTypeFilter = function(type) {
-currentTypeFilter = type;
-['all', 'lanyard', 'pvc'].forEach(t => {
-const btn = document.getElementById(typeBtn-${t});
-if (!btn) return;
-btn.className = (t === type) ? 'filter-btn active' : 'filter-btn';
-});
-renderJobs();
-};
-​window.setStatusFilter = function(status) {
-currentStatusFilter = status;
-['all', 'pending', 'completed'].forEach(s => {
-const btn = document.getElementById(statusBtn-${s});
-if (!btn) return;
-btn.className = (s === status) ? 'filter-btn active-dark' : 'filter-btn';
-});
-renderJobs();
-};
-​function updateSyncBadge(isConnected) {
-const badge = document.getElementById('syncBadge');
-const text = document.getElementById('syncBadgeText');
-const dot = document.getElementById('syncDot');
-if (!badge || !text) return;
-if (isConnected) {
-badge.style.background = 'rgba(16, 185, 129, 0.15)';
-badge.style.color = '#34d399';
-badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-text.innerText = 'ക്ലൗഡ് കണക്റ്റഡ്';
-if (dot) dot.style.background = '#10b981';
-} else {
-badge.style.background = 'rgba(244, 63, 94, 0.15)';
-badge.style.color = '#fb7185';
-badge.style.borderColor = 'rgba(244, 63, 94, 0.3)';
-text.innerText = 'ഓഫ്‌ലൈൻ';
-if (dot) dot.style.background = '#f43f5e';
-}
-}
-​window.exportToExcel = function() {
-if (jobs.length === 0) {
-showToast('ബാക്കപ്പ് ചെയ്യാൻ ജോബുകൾ ലഭ്യമല്ല', 'warning');
-return;
-}
-​const headers = ['Job ID', 'Type', 'Title', 'Client', 'Quantity', 'Delivery Date', 'Product Status', 'Stages Completed', 'Notes', 'Created Time'];
-​const rows = jobs.map(j => {
-const completed = isJobCompleted(j);
-const stagesList = getJobStages(j.jobType);
-const doneList = stagesList.filter(s => j.stages && j.stages[s.id]).map(s => s.name).join(' | ');
-​return [
-"${j.id}",
-"${j.jobType === 'pvc' ? 'PVC Card' : 'Lanyard'}",
-"${(j.title || '').replace(/"/g, '""')}",
-"${(j.client || '').replace(/"/g, '""')}",
-"${j.quantity || ''}",
-"${j.deliveryDate || ''}",
-"${completed ? 'COMPLETED' : 'PENDING'}",
-"${doneList}",
-"${(j.notes || '').replace(/"/g, '""')}",
-"${new Date(j.createdAt).toLocaleString('en-IN')}"
-];
-});
-​const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
-const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-const url = URL.createObjectURL(blob);
-const link = document.createElement('a');
-link.setAttribute('href', url);
-link.setAttribute('download', Production_Tracker_${new Date().toISOString().slice(0, 10)}.csv);
-document.body.appendChild(link);
-link.click();
-document.body.removeChild(link);
-​showToast('എക്സൽ ബാക്കപ്പ് ഫയൽ ഡൗൺലോഡ് ആയി!', 'success');
-};
-​let toastTimer = null;
-function showToast(message, type = 'default') {
-const toast = document.getElementById('toast');
-const toastMessage = document.getElementById('toastMessage');
-const toastIcon = document.getElementById('toastIcon');
-if (!toast || !toastMessage) return;
-​clearTimeout(toastTimer);
-​let icon = '🔔';
-if (type === 'success') icon = '🟢';
-else if (type === 'warning') icon = '🔴';
-else if (type === 'info') icon = '⚡';
-​toastIcon.innerText = icon;
-toastMessage.innerText = message;
-​toast.classList.add('show');
-toastTimer = setTimeout(() => {
-toast.classList.remove('show');
-}, 3000);
-}
-​function timeAgo(timestamp) {
-if (!timestamp) return 'ഇപ്പോൾ';
-const sec = Math.floor((Date.now() - timestamp) / 1000);
-if (sec < 60) return 'ഇപ്പോൾ';
-const min = Math.floor(sec / 60);
-if (min < 60) return ${min} മിനിറ്റ് മുൻപ്;
-const hrs = Math.floor(min / 60);
-if (hrs < 24) return ${hrs} മണിക്കൂർ മുൻപ്;
-return ${Math.floor(hrs / 24)} ദിവസം മുൻപ്;
-}
-​function escapeHtml(str) {
-if (!str) return '';
-return String(str)
-.replace(/&/g, '&')
-.replace(/</g, '<')
-.replace(/>/g, '>')
-.replace(/"/g, '"')
-.replace(/'/g, ''');
-}
-​// Direct Instant Startup
-window.addEventListener('DOMContentLoaded', () => {
-document.querySelectorAll('.app-modal').forEach(m => {
-m.classList.remove('active');
-});
-​if (!factorySyncChannel) {
-openModal('factoryLockModal');
-} else {
-jobs = loadLocalJobs();
-renderJobs();
-initRealtimeSync();
-}
-updateRoleUI();
-});
-</script>
+
+  <header class="header-bar">
+    <div class="header-content">
+      <div class="brand-wrap">
+        <div class="brand-icon">⚙️</div>
+        <div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <h1 class="brand-title">PRINTO<span>TRACK</span></h1>
+            <span id="syncBadge" style="font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #1e293b; color: #94a3b8; border: 1px solid #334155; display: inline-flex; align-items: center; gap: 4px;">
+              <span id="syncDot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#64748b;"></span>
+              <span id="syncBadgeText">തത്സമയം ബന്ധിപ്പിക്കുന്നു...</span>
+            </span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #94a3b8; margin-top: 2px;">
+            <span>ഫാക്ടറി:</span>
+            <span id="channelCodeDisplay" style="font-family: monospace; font-weight: bold; color: #10b981; background: #1e293b; padding: 1px 6px; border-radius: 4px; border: 1px solid #334155;">
+              ••••••••
+            </span>
+            <button onclick="toggleSecretVisibility()" style="background:none; border:none; color:#94a3b8; cursor:pointer;" title="കോഡ് കാണുക/മറയ്ക്കുക">👁</button>
+            <button onclick="handleChannelSettingsClick()" style="background:none; border:none; color:#94a3b8; cursor:pointer;" title="സെറ്റിംഗ്സ്">⚙️</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <button id="adminRoleBtn" onclick="toggleAdminLoginModal()" class="btn btn-dark">
+          <span id="adminRoleIcon">🔒</span>
+          <span id="adminRoleText">അഡ്മിൻ ലോഗിൻ</span>
+        </button>
+
+        <button onclick="exportToExcel()" class="btn btn-dark" title="ഡാറ്റ എക്സലിലേക്ക് സേവ് ചെയ്യുക">
+          <span>📊</span>
+          <span>എക്സൽ</span>
+        </button>
+
+        <button onclick="handleNewJobClick()" class="btn btn-emerald">
+          <span style="font-size: 14px; font-weight: 900;">+</span>
+          <span>പുതിയ ജോബ്</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="sub-bar">
+      <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
+        <div class="filter-group">
+          <button id="typeBtn-all" onclick="setTypeFilter('all')" class="filter-btn active">എല്ലാം</button>
+          <button id="typeBtn-lanyard" onclick="setTypeFilter('lanyard')" class="filter-btn">🧵 ലന്യാർഡ്</button>
+          <button id="typeBtn-pvc" onclick="setTypeFilter('pvc')" class="filter-btn">💳 പിവിസി കാർഡ്</button>
+        </div>
+
+        <div class="filter-group">
+          <button id="statusBtn-all" onclick="setStatusFilter('all')" class="filter-btn active-dark">എല്ലാ സ്റ്റാറ്റസും</button>
+          <button id="statusBtn-pending" onclick="setStatusFilter('pending')" class="filter-btn">🔴 പെൻഡിംഗ്</button>
+          <button id="statusBtn-completed" onclick="setStatusFilter('completed')" class="filter-btn">🟢 പൂർത്തിയായി</button>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <input type="text" id="searchInput" oninput="renderJobs()" placeholder="🔍 തിരയുക..." class="search-box">
+        <span style="font-size: 11px; font-weight: bold; background: #0f172a; padding: 6px 10px; border-radius: 8px; border: 1px solid #1e293b; color: #94a3b8; white-space: nowrap;">
+          ആകെ: <span id="totalJobsCount" style="color: #10b981; font-family: monospace;">0</span>
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-wrap">
+    
+    <div id="roleBanner" class="role-banner">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span id="roleBannerIcon" style="font-size: 16px;">👁️</span>
+        <span id="roleBannerText">സാധാരണ മോഡ്: മാറ്റങ്ങൾ കാണാൻ മാത്രം സാധിക്കും. എഡിറ്റ് ചെയ്യാൻ അഡ്മിൻ ലോഗിൻ ചെയ്യുക.</span>
+      </div>
+      <button id="roleBannerAction" onclick="toggleAdminLoginModal()" style="background:none; border:none; color:#10b981; font-weight:bold; cursor:pointer; text-decoration:underline; font-size:11px; white-space: nowrap;">
+        അഡ്മിൻ കോഡ് നൽകുക
+      </button>
+    </div>
+
+    <!-- Production Jobs Grid -->
+    <div id="jobsGrid" class="jobs-grid"></div>
+
+    <!-- Empty State -->
+    <div id="emptyState" style="display:none; text-align:center; padding: 60px 16px;">
+      <div style="width: 60px; height: 60px; border-radius: 16px; background:#0f172a; border:1px solid #1e293b; display:flex; align-items:center; justify-content:center; font-size:26px; margin:0 auto 12px auto;">
+        📦
+      </div>
+      <h3 style="font-size: 15px; font-weight: 700; color: #cbd5e1;">ജോബുകൾ ഒന്നും ചേർത്തിട്ടില്ല</h3>
+      <p style="font-size: 12px; color: #64748b; margin-top: 4px;">പുതിയ ഓർഡർ ചേർക്കാൻ മുകളിലെ പച്ച ബട്ടൺ അമർത്തുക (അഡ്മിൻ മാത്രം).</p>
+      <button onclick="handleNewJobClick()" class="btn btn-emerald" style="margin-top: 14px;">
+        + പുതിയ ജോബ് ചേർക്കുക
+      </button>
+    </div>
+
+  </main>
+
+  <div id="factoryLockModal" class="app-modal">
+    <div class="modal-card" style="padding: 24px; text-align: center; max-width: 360px;">
+      <div style="width: 50px; height: 50px; border-radius: 14px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981; display:flex; align-items:center; justify-content:center; font-size: 24px; margin: 0 auto 14px auto;">
+        🔒
+      </div>
+      <h3 style="font-size: 17px; font-weight: 800; color: #ffffff;">ഫാക്ടറി ആക്സസ് കോഡ്</h3>
+      <p style="font-size: 12px; color: #94a3b8; margin: 6px 0 16px 0; line-height: 1.4;">
+        നിങ്ങളുടെ സ്ഥാപനത്തിന്റെ പ്രൊഡക്ഷൻ ട്രാക്കർ തുറക്കാൻ സെക്യൂരിറ്റി കോഡ് ടൈപ്പ് ചെയ്യുക.
+      </p>
+
+      <form onsubmit="handleInitialCodeSubmit(event)" style="text-align: left;">
+        <label style="display: block; font-size: 11px; font-weight: 600; color: #cbd5e1; margin-bottom: 4px;">രഹസ്യ കോഡ് *</label>
+        <div style="position: relative; margin-bottom: 14px;">
+          <input 
+            type="password" 
+            id="initialAccessCodeInput" 
+            required 
+            placeholder="കോഡ് നൽകുക" 
+            class="form-input" 
+            style="font-family: monospace; text-transform: uppercase; color: #10b981; font-weight: bold; letter-spacing: 2px;"
+          >
+          <button type="button" onclick="toggleInputSecret('initialAccessCodeInput', this)" style="position: absolute; right: 10px; top: 8px; background: none; border: none; color: #94a3b8; cursor: pointer;">👁️</button>
+        </div>
+
+        <button type="submit" class="btn btn-emerald" style="width: 100%; justify-content: center; padding: 10px;">
+          ട്രാക്കർ തുറക്കുക ➔
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="adminLoginModal" class="app-modal">
+    <div class="modal-card" style="padding: 24px; text-align: center; max-width: 320px;">
+      <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; display:flex; align-items:center; justify-content:center; font-size: 22px; margin: 0 auto 12px auto;">
+        👑
+      </div>
+      <h3 style="font-size: 16px; font-weight: 800; color: #ffffff;">അഡ്മിൻ ആക്സസ് PIN</h3>
+      <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 14px 0;">മാറ്റങ്ങൾ വരുത്താൻ മാനേജറുടെ രഹസ്യ PIN നൽകുക.</p>
+
+      <form onsubmit="handleAdminLoginSubmit(event)">
+        <input 
+          type="password" 
+          id="adminPinInput" 
+          required 
+          placeholder="••••••" 
+          class="form-input" 
+          style="text-align: center; font-family: monospace; letter-spacing: 4px; font-size: 16px; color: #10b981; margin-bottom: 14px;"
+        >
+        <div style="display: flex; gap: 8px;">
+          <button type="button" onclick="closeAdminLoginModal()" class="btn btn-dark" style="flex: 1; justify-content: center;">റദ്ദാക്കുക</button>
+          <button type="submit" class="btn btn-emerald" style="flex: 1; justify-content: center;">അൺലോക്ക്</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="newJobModal" class="app-modal">
+    <div class="modal-card" style="max-height: 92vh; display: flex; flex-direction: column;">
+      <div style="padding: 14px 18px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between;">
+        <h3 style="font-size: 14px; font-weight: 800; color: #ffffff;">📝 പുതിയ പ്രൊഡക്ഷൻ ഓർഡർ</h3>
+        <button type="button" onclick="closeNewJobModal()" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;">✕</button>
+      </div>
+
+      <form id="newJobForm" onsubmit="handleCreateJob(event)" style="padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
+        
+        <div>
+          <label style="display:block; font-size:11px; font-weight:700; color:#cbd5e1; margin-bottom:6px;">പ്രൊഡക്റ്റ് ടൈപ്പ് *</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <label style="display: flex; align-items: center; gap: 8px; background: #0b0f19; border: 1px solid #334155; padding: 10px; border-radius: 10px; cursor: pointer;">
+              <input type="radio" name="jobType" value="lanyard" checked style="accent-color: #10b981;">
+              <div>
+                <div style="font-size: 12px; font-weight: 700; color: #ffffff;">🧵 ലന്യാർഡ്</div>
+                <div style="font-size: 10px; color: #94a3b8;">8 ഘട്ടങ്ങൾ</div>
+              </div>
+            </label>
+
+            <label style="display: flex; align-items: center; gap: 8px; background: #0b0f19; border: 1px solid #334155; padding: 10px; border-radius: 10px; cursor: pointer;">
+              <input type="radio" name="jobType" value="pvc" style="accent-color: #10b981;">
+              <div>
+                <div style="font-size: 12px; font-weight: 700; color: #ffffff;">💳 പിവിസി കാർഡ്</div>
+                <div style="font-size: 10px; color: #94a3b8;">5 ഘട്ടങ്ങൾ</div>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div>
+            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">ജോബ് പേര് *</label>
+            <input type="text" id="jobTitle" required placeholder="e.g. ABC College ID" class="form-input">
+          </div>
+          <div>
+            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">ക്ലയന്റ് / സ്ഥാപനം</label>
+            <input type="text" id="jobClient" placeholder="e.g. Media Wings" class="form-input">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div>
+            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">എണ്ണം (Quantity)</label>
+            <input type="number" id="jobQuantity" placeholder="500" class="form-input">
+          </div>
+          <div>
+            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">ഡെലിവറി തീയതി</label>
+            <input type="date" id="jobDelivery" class="form-input">
+          </div>
+        </div>
+
+        <div>
+          <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">പ്രൂഫ് ചിത്രം (Proof Image)</label>
+          <div style="border: 2px dashed #334155; border-radius: 10px; padding: 12px; text-align: center; position: relative; background: #0b0f19;">
+            <input type="file" id="jobImageInput" accept="image/*" onchange="handleImageSelection(event)" style="position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;">
+            <div id="imageUploadPlaceholder">
+              <span style="font-size: 20px;">📷</span>
+              <div style="font-size: 11px; color: #cbd5e1; margin-top: 2px;">ചിത്രം തിരഞ്ഞെടുക്കുക</div>
+            </div>
+            <div id="imagePreviewContainer" style="display: none; align-items: center; justify-content: center; gap: 10px;">
+              <img id="imagePreview" src="" alt="Proof Preview" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid #10b981;">
+              <button type="button" onclick="clearSelectedImage(event)" style="background: none; border: none; color: #f43f5e; font-size: 11px; text-decoration: underline; cursor: pointer;">ഒഴിവാക്കുക</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">കുറിപ്പ് (Notes)</label>
+          <textarea id="jobNotes" rows="2" placeholder="നിർദ്ദേശങ്ങൾ, പ്രത്യേകതകൾ..." class="form-input" style="resize: none;"></textarea>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #1e293b; padding-top: 10px;">
+          <button type="button" onclick="closeNewJobModal()" class="btn btn-dark">റദ്ദാക്കുക</button>
+          <button type="submit" class="btn btn-emerald">ഓർഡർ സേവ് ചെയ്യുക</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <div id="channelSettingsModal" class="app-modal">
+    <div class="modal-card" style="padding: 20px; max-width: 340px;">
+      <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">⚙️ ഫാക്ടറി കോഡ് മാറ്റുക</h4>
+      <p style="font-size: 11px; color: #94a3b8; margin-bottom: 12px;">ജീവനക്കാർ കണക്റ്റ് ചെയ്യുന്ന രഹസ്യ സിങ്ക് കോഡ് ഇവിടെ മാറ്റാം.</p>
+      
+      <div style="position: relative; margin-bottom: 14px;">
+        <input type="password" id="inputCustomChannel" class="form-input" style="font-family: monospace; text-transform: uppercase; color: #10b981; font-weight: bold;">
+        <button type="button" onclick="toggleInputSecret('inputCustomChannel', this)" style="position: absolute; right: 10px; top: 8px; background: none; border: none; color: #94a3b8; cursor: pointer;">👁️</button>
+      </div>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #1e293b; padding-top: 10px;">
+        <button type="button" onclick="logoutFactoryCode()" style="background: none; border: none; color: #f43f5e; font-size: 11px; text-decoration: underline; cursor: pointer;">ആപ്പ് ലോക്ക് ചെയ്യുക</button>
+        <div style="display: flex; gap: 6px;">
+          <button type="button" onclick="closeChannelModal()" class="btn btn-dark" style="padding: 6px 10px;">ക്ലോസ്</button>
+          <button type="button" onclick="saveChannelModal()" class="btn btn-emerald" style="padding: 6px 12px;">സേവ്</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="deleteConfirmModal" class="app-modal">
+    <div class="modal-card" style="padding: 20px; text-align: center; max-width: 300px;">
+      <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.4); color: #f43f5e; display:flex; align-items:center; justify-content:center; font-size: 20px; margin: 0 auto 10px auto;">
+        🗑
+      </div>
+      <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 4px;">ഈ ജോബ് ഒഴിവാക്കണമോ?</h4>
+      <p style="font-size: 11px; color: #94a3b8; margin-bottom: 14px;">ഇത് എല്ലാ ഫോണുകളിൽ നിന്നും ഒഴിവാക്കപ്പെടും.</p>
+      
+      <div style="display: flex; gap: 8px;">
+        <button type="button" onclick="closeDeleteModal()" class="btn btn-dark" style="flex: 1; justify-content: center;">വേണ്ട</button>
+        <button type="button" onclick="executeDeleteJob()" class="btn" style="flex: 1; justify-content: center; background: #e11d48; color: #ffffff;">കളയുക</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="imageLightboxModal" class="app-modal" onclick="closeLightbox()">
+    <div style="position: relative; max-width: 90vw; max-height: 85vh;" onclick="event.stopPropagation()">
+      <button type="button" onclick="closeLightbox()" style="position: absolute; top: -35px; right: 0; background: #1e293b; color: #ffffff; border: none; padding: 4px 10px; border-radius: 20px; font-size: 11px; cursor: pointer;">✕ ക്ലോസ്</button>
+      <img id="lightboxImage" src="" alt="Proof Preview Full" style="max-width: 100%; max-height: 80vh; border-radius: 12px; border: 1px solid #334155; object-fit: contain;">
+      <div id="lightboxCaption" style="text-align: center; font-size: 12px; color: #e2e8f0; margin-top: 6px;"></div>
+    </div>
+  </div>
+
+  <div id="toast">
+    <span id="toastIcon">🔔</span>
+    <span id="toastMessage">അറിയിപ്പ്</span>
+  </div>
+
+  <script>
+    /* Production Workflow Stage Definitions */
+    const LANYARD_STAGES = [
+      { id: 'confirmation', name: 'Confirmation', icon: '📝' },
+      { id: 'printing',     name: 'Printing',     icon: '🖨' },
+      { id: 'fusing',       name: 'Fusing',       icon: '⚡' },
+      { id: 'cutting',      name: 'Cutting',      icon: '✂' },
+      { id: 'stitching',    name: 'Stitching',    icon: '🧵' },
+      { id: 'clamping',     name: 'Clamping',     icon: '🗜️' },
+      { id: 'punching',     name: 'Punching',     icon: '🔘' },
+      { id: 'packing',      name: 'Packing',      icon: '📦' }
+    ];
+
+    const PVC_STAGES = [
+      { id: 'confirmation',      name: 'Confirmation',        icon: '📝' },
+      { id: 'scoring_soldering', name: 'Scoring / Soldering', icon: '⚡' },
+      { id: 'fusing',            name: 'Fusing',               icon: '🔥' },
+      { id: 'cutting',           name: 'Cutting',              icon: '✂️' },
+      { id: 'packing',           name: 'Packing',              icon: '📦' }
+    ];
+
+    /* Storage Helpers with Error Isolation */
+    function safeGet(key, defVal = '') {
+      try { const v = localStorage.getItem(key); return v !== null ? v : defVal; } catch(e) { return defVal; }
+    }
+    function safeSet(key, val) {
+      try { localStorage.setItem(key, val); } catch(e) {}
+    }
+    function safeSessionGet(key, defVal = '') {
+      try { const v = sessionStorage.getItem(key); return v !== null ? v : defVal; } catch(e) { return defVal; }
+    }
+    function safeSessionSet(key, val) {
+      try { sessionStorage.setItem(key, val); } catch(e) {}
+    }
+
+    /* Core Application Variables */
+    let currentUserId = getOrCreateUserId();
+    const DEFAULT_FACTORY_PASS = 'PRINTO';
+    let factorySyncChannel = safeGet('prod_factory_channel', '');
+    let isCodeVisible = false;
+    let currentTypeFilter = 'all';
+    let currentStatusFilter = 'all';
+
+    let isAdmin = safeSessionGet('prod_is_admin') === 'true';
+    const STORED_ADMIN_PIN = '2026';
+    
+    let jobs = [];
+    let tempNewJobImage = null;
+    let pendingDeleteId = null;
+    let mqttClient = null;
+
+    function getOrCreateUserId() {
+      let id = safeGet('prod_user_id');
+      if (!id) {
+        id = 'u_' + Math.random().toString(36).substring(2, 7);
+        safeSet('prod_user_id', id);
+      }
+      return id;
+    }
+
+    function getStorageKey() {
+      return `prod_data_${factorySyncChannel || DEFAULT_FACTORY_PASS}`;
+    }
+
+    function loadLocalJobs() {
+      try {
+        const raw = safeGet(getStorageKey());
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+        
+        // Auto-recovery from legacy storage keys if present
+        const legacyKeys = ['prod_data_PRINTO', 'prod_jobs_data', 'production_jobs'];
+        for (const k of legacyKeys) {
+          const legacy = safeGet(k);
+          if (legacy) {
+            const parsed = JSON.parse(legacy);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              return parsed;
+            }
+          }
+        }
+      } catch (err) {}
+      return [];
+    }
+
+    function saveLocalJobs() {
+      try { safeSet(getStorageKey(), JSON.stringify(jobs)); } catch(err) {}
+    }
+
+    function updateRoleUI() {
+      const btn = document.getElementById('adminRoleBtn');
+      const icon = document.getElementById('adminRoleIcon');
+      const text = document.getElementById('adminRoleText');
+      const banner = document.getElementById('roleBanner');
+      const bannerIcon = document.getElementById('roleBannerIcon');
+      const bannerText = document.getElementById('roleBannerText');
+      const bannerAction = document.getElementById('roleBannerAction');
+
+      if (isAdmin) {
+        if (btn) btn.className = 'btn btn-admin-active';
+        if (icon) icon.innerText = '👑';
+        if (text) text.innerText = 'അഡ്മിൻ (ലോഗൗട്ട്)';
+        if (banner) banner.className = 'role-banner admin';
+        if (bannerIcon) bannerIcon.innerText = '👑';
+        if (bannerText) bannerText.innerText = 'അഡ്മിൻ മോഡ് ഓൺ: ഓർഡറുകൾ ചേർക്കാനും മാറ്റാനും പൂർണ്ണ അനുമതിയുണ്ട്.';
+        if (bannerAction) {
+          bannerAction.innerText = 'ലോഗൗട്ട് ചെയ്യുക';
+          bannerAction.style.color = '#f43f5e';
+        }
+      } else {
+        if (btn) btn.className = 'btn btn-dark';
+        if (icon) icon.innerText = '🔒';
+        if (text) text.innerText = 'അഡ്മിൻ ലോഗിൻ';
+        if (banner) banner.className = 'role-banner';
+        if (bannerIcon) bannerIcon.innerText = '👁️';
+        if (bannerText) bannerText.innerText = 'സാധാരണ മോഡ്: മാറ്റങ്ങൾ കാണാൻ മാത്രം സാധിക്കും. എഡിറ്റ് ചെയ്യാൻ അഡ്മിൻ ലോഗിൻ ചെയ്യുക.';
+        if (bannerAction) {
+          bannerAction.innerText = 'അഡ്മിൻ കോഡ് നൽകുക';
+          bannerAction.style.color = '#10b981';
+        }
+      }
+    }
+
+    window.toggleAdminLoginModal = function() {
+      if (isAdmin) {
+        isAdmin = false;
+        safeSessionSet('prod_is_admin', 'false');
+        updateRoleUI();
+        renderJobs();
+        showToast('അഡ്മിൻ മോഡ് ലോഗൗട്ട് ചെയ്തു (View-Only)', 'warning');
+      } else {
+        document.getElementById('adminPinInput').value = '';
+        openModal('adminLoginModal');
+      }
+    };
+
+    window.closeAdminLoginModal = function() {
+      closeModal('adminLoginModal');
+    };
+
+    window.handleAdminLoginSubmit = function(e) {
+      e.preventDefault();
+      const pin = document.getElementById('adminPinInput').value.trim();
+      if (pin === STORED_ADMIN_PIN) {
+        isAdmin = true;
+        safeSessionSet('prod_is_admin', 'true');
+        closeAdminLoginModal();
+        updateRoleUI();
+        renderJobs();
+        showToast('അഡ്മിൻ ആക്സസ് അൺലോക്ക് ആയി! 🎉', 'success');
+      } else {
+        showToast('തെറ്റായ അഡ്മിൻ കോഡ്! വീണ്ടും ശ്രമിക്കുക.', 'warning');
+      }
+    };
+
+    function requireAdminPermission() {
+      if (!isAdmin) {
+        showToast('മാറ്റങ്ങൾ വരുത്താൻ അഡ്മിൻ കോഡ് നൽകുക!', 'warning');
+        document.getElementById('adminPinInput').value = '';
+        openModal('adminLoginModal');
+        return false;
+      }
+      return true;
+    }
+
+    window.handleNewJobClick = function() {
+      if (requireAdminPermission()) {
+        openNewJobModal();
+      }
+    };
+
+    function openModal(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('active');
+      }
+    }
+
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.remove('active');
+      }
+    }
+
+    function initRealtimeSync() {
+      updateChannelLabelDisplay();
+
+      if (!factorySyncChannel) {
+        openModal('factoryLockModal');
+        updateSyncBadge(false);
+        return;
+      } else {
+        closeModal('factoryLockModal');
+      }
+
+      if (typeof mqtt === 'undefined') {
+        updateSyncBadge(false);
+        return;
+      }
+
+      const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
+      const clientId = 'printo_' + currentUserId + '_' + Math.random().toString(16).substring(2, 6);
+
+      try {
+        if (mqttClient) {
+          try { mqttClient.end(true); } catch(e){}
+        }
+
+        mqttClient = mqtt.connect(brokerUrl, {
+          clientId: clientId,
+          clean: true,
+          connectTimeout: 7000,
+          reconnectPeriod: 6000
+        });
+
+        const topic = `factory/prod_v11/${factorySyncChannel}`;
+
+        mqttClient.on('connect', () => {
+          updateSyncBadge(true);
+          mqttClient.subscribe(topic, { qos: 1 });
+          
+          broadcastMessage({
+            type: 'STATE_REQUEST',
+            sender: currentUserId
+          });
+
+          if (jobs.length > 0) {
+            broadcastRetainedSnapshot();
+          }
+        });
+
+        mqttClient.on('message', (t, payload) => {
+          try {
+            const data = JSON.parse(payload.toString());
+            if (!data || data.sender === currentUserId) return;
+            handleIncomingBroadcast(data);
+          } catch (e) {}
+        });
+
+        mqttClient.on('error', () => updateSyncBadge(false));
+        mqttClient.on('close', () => updateSyncBadge(false));
+
+      } catch (err) {
+        updateSyncBadge(false);
+      }
+    }
+
+    function broadcastMessage(payloadObj, retain = false) {
+      if (mqttClient && mqttClient.connected) {
+        try {
+          const topic = `factory/prod_v11/${factorySyncChannel}`;
+          mqttClient.publish(topic, JSON.stringify(payloadObj), { qos: 1, retain: retain });
+        } catch (e) {}
+      }
+    }
+
+    function broadcastRetainedSnapshot() {
+      broadcastMessage({
+        type: 'STATE_SHARE',
+        sender: currentUserId,
+        jobs: jobs,
+        timestamp: Date.now()
+      }, true);
+    }
+
+    function handleIncomingBroadcast(data) {
+      if (data.type === 'STATE_REQUEST') {
+        if (jobs.length > 0) {
+          broadcastMessage({
+            type: 'STATE_SHARE',
+            sender: currentUserId,
+            jobs: jobs,
+            timestamp: Date.now()
+          });
+        }
+      } else if (data.type === 'STATE_SHARE') {
+        if (Array.isArray(data.jobs) && data.jobs.length > 0) {
+          jobs = mergeJobsLists(jobs, data.jobs);
+          saveLocalJobs();
+          renderJobs();
+        }
+      } else if (data.type === 'JOB_UPSERT') {
+        if (data.job && data.job.id) {
+          const idx = jobs.findIndex(j => j.id === data.job.id);
+          if (idx !== -1) {
+            jobs[idx] = data.job;
+          } else {
+            jobs.unshift(data.job);
+          }
+          saveLocalJobs();
+          renderJobs();
+          showToast(`തത്സമയ മാറ്റം: ${data.job.title}`, 'info');
+        }
+      } else if (data.type === 'JOB_DELETE') {
+        if (data.jobId) {
+          jobs = jobs.filter(j => j.id !== data.jobId);
+          saveLocalJobs();
+          renderJobs();
+          broadcastRetainedSnapshot();
+          showToast('ഒരു ഓർഡർ നീക്കം ചെയ്യപ്പെട്ടു', 'warning');
+        }
+      }
+    }
+
+    function mergeJobsLists(localList, remoteList) {
+      const map = new Map();
+      localList.forEach(j => map.set(j.id, j));
+      remoteList.forEach(rj => {
+        if (!map.has(rj.id)) {
+          map.set(rj.id, rj);
+        } else {
+          const lj = map.get(rj.id);
+          const lTime = lj.updatedAt || 0;
+          const rTime = rj.updatedAt || 0;
+          if (rTime >= lTime) {
+            map.set(rj.id, rj);
+          }
+        }
+      });
+      return Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+    }
+
+    function getJobStages(jobType) {
+      return jobType === 'pvc' ? PVC_STAGES : LANYARD_STAGES;
+    }
+
+    function isJobCompleted(job) {
+      const stages = getJobStages(job.jobType);
+      return stages.every(s => job.stages && job.stages[s.id] === true);
+    }
+
+    function renderJobs() {
+      const container = document.getElementById('jobsGrid');
+      const emptyState = document.getElementById('emptyState');
+      const searchVal = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+
+      const filtered = jobs.filter(job => {
+        if (currentTypeFilter !== 'all' && (job.jobType || 'lanyard') !== currentTypeFilter) {
+          return false;
+        }
+        const completed = isJobCompleted(job);
+        if (currentStatusFilter === 'pending' && completed) return false;
+        if (currentStatusFilter === 'completed' && !completed) return false;
+
+        if (searchVal) {
+          const matchTitle = (job.title || '').toLowerCase().includes(searchVal);
+          const matchClient = (job.client || '').toLowerCase().includes(searchVal);
+          const matchNotes = (job.notes || '').toLowerCase().includes(searchVal);
+          const matchId = (job.id || '').toLowerCase().includes(searchVal);
+          if (!matchTitle && !matchClient && !matchNotes && !matchId) return false;
+        }
+        return true;
+      });
+
+      document.getElementById('totalJobsCount').innerText = filtered.length;
+
+      if (filtered.length === 0) {
+        container.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      } else {
+        emptyState.style.display = 'none';
+      }
+
+      container.innerHTML = filtered.map(job => {
+        const completed = isJobCompleted(job);
+        const stagesList = getJobStages(job.jobType);
+        
+        let completedCount = 0;
+        stagesList.forEach(s => {
+          if (job.stages && job.stages[s.id]) completedCount++;
+        });
+
+        const percent = Math.round((completedCount / stagesList.length) * 100);
+        const isLanyard = (job.jobType || 'lanyard') === 'lanyard';
+
+        return `
+          <div class="job-card ${completed ? 'completed' : ''}">
+            
+            <div>
+              <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+                <div style="flex: 1;">
+                  <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                    <span class="badge-pill ${isLanyard ? 'badge-lanyard' : 'badge-pvc'}">
+                      ${isLanyard ? '🧵 ലന്യാർഡ്' : '💳 പിവിസി കാർഡ്'}
+                    </span>
+                    <span style="font-size: 10px; font-family: monospace; color: #64748b;">#${job.id.substring(job.id.length - 5)}</span>
+                  </div>
+                  <h3 style="font-size: 15px; font-weight: 800; color: #ffffff; margin-top: 4px; line-height: 1.3;">${escapeHtml(job.title)}</h3>
+                  <div style="font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap;">
+                    <span>${job.client ? '🏢 ' + escapeHtml(job.client) : 'ക്ലയന്റ് വിവരമില്ല'}</span>
+                    ${job.quantity ? `<span>•</span><span>📦 ${job.quantity} pcs</span>` : ''}
+                  </div>
+                </div>
+
+                ${isAdmin ? `
+                  <button onclick="promptDeleteJob('${job.id}')" title="കളയുക" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 4px; color: #64748b; transition: color 0.15s;" onmouseover="this.style.color='#f43f5e'" onmouseout="this.style.color='#64748b'">
+                    🗑️
+                  </button>
+                ` : `
+                  <span style="font-size: 12px; color: #475569;" title="കാണാൻ മാത്രം (View-Only)">🔒</span>
+                `}
+              </div>
+
+              ${job.notes ? `
+                <div style="margin-top: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); color: #fde68a; font-size: 11px; display: flex; gap: 6px;">
+                  <span style="color: #fbbf24; font-weight: bold;">📌</span>
+                  <div style="line-height: 1.4; word-break: break-word;">
+                    <span style="font-weight: bold; color: #fcd34d;">കുറിപ്പ്:</span> ${escapeHtml(job.notes)}
+                  </div>
+                </div>
+              ` : ''}
+
+              <!-- Status Light Panel -->
+              <div class="status-panel ${completed ? 'green' : 'red'}">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div class="${completed ? 'light-green' : 'light-red'}"></div>
+                  <div>
+                    <div style="font-size: 9px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: ${completed ? '#34d399' : '#fb7185'};">
+                      PRODUCT STATUS
+                    </div>
+                    <div style="font-size: 11px; font-weight: 800; color: ${completed ? '#a7f3d0' : '#fecdd3'};">
+                      ${completed ? '✓ പൂർത്തിയായി (COMPLETED)' : '⏳ പെൻഡിംഗ് (PENDING)'}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  ${job.proofImage ? `
+                    <div onclick="openLightbox('${job.proofImage}', '${escapeHtml(job.title)}')" style="cursor: pointer;" title="പ്രൂഫ് ചിത്രം വലുതായി കാണുക">
+                      <img src="${job.proofImage}" alt="Proof" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover; border: 1px solid #334155;">
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+
+              <!-- Progress Bar -->
+              <div style="margin-top: 12px;">
+                <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px; color: #94a3b8;">
+                  <span>ഘട്ടങ്ങൾ (${completedCount}/${stagesList.length})</span>
+                  <span style="font-weight: bold; font-family: monospace; color: ${completed ? '#34d399' : '#cbd5e1'};">${percent}%</span>
+                </div>
+                <div style="width: 100%; background: #0b0f19; border-radius: 99px; height: 6px; overflow: hidden; border: 1px solid #1e293b;">
+                  <div style="height: 100%; border-radius: 99px; transition: width 0.3s; background: ${completed ? '#10b981' : 'linear-gradient(90deg, #f59e0b, #10b981)'}; width: ${percent}%;"></div>
+                </div>
+              </div>
+
+              <!-- Production Stages Grid -->
+              <div class="stages-grid">
+                ${stagesList.map(st => {
+                  const isDone = job.stages && job.stages[st.id] === true;
+                  return `
+                    <button 
+                      type="button"
+                      onclick="handleStageToggleClick('${job.id}', '${st.id}')"
+                      class="stage-btn ${isDone ? 'done' : ''}"
+                      title="${isAdmin ? 'സ്റ്റാറ്റസ് മാറ്റാൻ ക്ലിക്ക് ചെയ്യുക' : 'അഡ്മിൻ കോഡ് വേണം'}"
+                    >
+                      <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 4px;">
+                        <span>${st.icon}</span>
+                        <span>${st.name}</span>
+                      </span>
+                      <span style="font-weight: 800; font-size: 11px;">${isDone ? '✓' : '○'}</span>
+                    </button>
+                  `;
+                }).join('')}
+              </div>
+
+            </div>
+
+            <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(30, 41, 59, 0.7); display: flex; justify-content: space-between; font-size: 10px; color: #64748b;">
+              <span>${job.deliveryDate ? '📅 ' + job.deliveryDate : 'തീയതിയില്ല'}</span>
+              <span>അപ്‌‌ഡേറ്റ്: ${timeAgo(job.updatedAt)}</span>
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.handleStageToggleClick = function(jobId, stageId) {
+      if (!requireAdminPermission()) return;
+
+      const job = jobs.find(j => j.id === jobId);
+      if (!job) return;
+
+      if (!job.stages) job.stages = {};
+      job.stages[stageId] = !job.stages[stageId];
+      job.updatedAt = Date.now();
+      job.updatedBy = currentUserId;
+
+      saveLocalJobs();
+      renderJobs();
+
+      broadcastMessage({
+        type: 'JOB_UPSERT',
+        sender: currentUserId,
+        job: job
+      });
+
+      broadcastRetainedSnapshot();
+
+      const done = job.stages[stageId];
+      showToast(`${job.title}: ${stageId} ${done ? 'പൂർത്തിയായി' : 'മാറ്റി'}`, done ? 'success' : 'default');
+    };
+
+    window.handleCreateJob = function(e) {
+      e.preventDefault();
+      if (!requireAdminPermission()) return;
+
+      const title = document.getElementById('jobTitle').value.trim();
+      if (!title) return;
+
+      const jobType = document.querySelector('input[name="jobType"]:checked')?.value || 'lanyard';
+      const client = document.getElementById('jobClient').value.trim();
+      const quantity = document.getElementById('jobQuantity').value.trim();
+      const deliveryDate = document.getElementById('jobDelivery').value;
+      const notes = document.getElementById('jobNotes').value.trim();
+
+      const newJob = {
+        id: 'job_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
+        title: title,
+        jobType: jobType,
+        client: client,
+        quantity: quantity,
+        deliveryDate: deliveryDate,
+        notes: notes,
+        proofImage: tempNewJobImage || null,
+        stages: {},
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        updatedBy: currentUserId
+      };
+
+      jobs.unshift(newJob);
+      saveLocalJobs();
+      renderJobs();
+      closeNewJobModal();
+
+      broadcastMessage({
+        type: 'JOB_UPSERT',
+        sender: currentUserId,
+        job: newJob
+      });
+
+      broadcastRetainedSnapshot();
+      showToast(`പുതിയ ജോബ് "${title}" ചേർത്തു!`, 'success');
+    };
+
+    window.handleImageSelection = function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        compressBase64Image(evt.target.result, 320, 0.6, (compressedData) => {
+          tempNewJobImage = compressedData;
+          document.getElementById('imagePreview').src = compressedData;
+          document.getElementById('imageUploadPlaceholder').style.display = 'none';
+          document.getElementById('imagePreviewContainer').style.display = 'flex';
+        });
+      };
+      reader.readAsDataURL(file);
+    };
+
+    window.clearSelectedImage = function(e) {
+      if (e) e.stopPropagation();
+      tempNewJobImage = null;
+      document.getElementById('jobImageInput').value = '';
+      document.getElementById('imageUploadPlaceholder').style.display = 'block';
+      document.getElementById('imagePreviewContainer').style.display = 'none';
+    };
+
+    function compressBase64Image(src, maxWidth, quality, callback) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = function() {
+        let width = img.width;
+        let height = img.height;
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        callback(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.src = src;
+    }
+
+    window.toggleSecretVisibility = function() {
+      isCodeVisible = !isCodeVisible;
+      updateChannelLabelDisplay();
+    };
+
+    window.toggleInputSecret = function(inputId, btn) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.innerText = '🔒';
+      } else {
+        input.type = 'password';
+        btn.innerText = '👁️';
+      }
+    };
+
+    function updateChannelLabelDisplay() {
+      const label = document.getElementById('channelCodeDisplay');
+      if (!label) return;
+      label.innerText = isCodeVisible ? (factorySyncChannel || 'NONE') : '••••••••';
+    }
+
+    window.handleInitialCodeSubmit = function(e) {
+      e.preventDefault();
+      const val = document.getElementById('initialAccessCodeInput').value.trim();
+      if (!val) return;
+
+      const enteredCode = val.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+      const validCode = (safeGet('prod_factory_password', DEFAULT_FACTORY_PASS)).toUpperCase();
+
+      if (enteredCode !== validCode) {
+        showToast('തെറ്റായ കോഡ്! ശരിയായ ഫാക്ടറി കോഡ് നൽകുക.', 'warning');
+        return;
+      }
+
+      factorySyncChannel = enteredCode;
+      safeSet('prod_factory_channel', factorySyncChannel);
+
+      closeModal('factoryLockModal');
+      jobs = loadLocalJobs();
+      renderJobs();
+      initRealtimeSync();
+      showToast('ഫാക്ടറി കോഡ് കണക്റ്റ് ചെയ്തു!', 'success');
+    };
+
+    window.handleChannelSettingsClick = function() {
+      if (!requireAdminPermission()) return;
+      openChannelModal();
+    };
+
+    window.openChannelModal = function() {
+      if (!requireAdminPermission()) return;
+      document.getElementById('inputCustomChannel').value = factorySyncChannel || DEFAULT_FACTORY_PASS;
+      openModal('channelSettingsModal');
+    };
+
+    window.closeChannelModal = function() {
+      closeModal('channelSettingsModal');
+    };
+
+    window.saveChannelModal = function() {
+      if (!requireAdminPermission()) return;
+      const val = document.getElementById('inputCustomChannel').value.trim();
+      if (val) {
+        const cleanCode = val.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+        safeSet('prod_factory_password', cleanCode);
+        factorySyncChannel = cleanCode;
+        safeSet('prod_factory_channel', factorySyncChannel);
+        closeChannelModal();
+        jobs = loadLocalJobs();
+        renderJobs();
+        initRealtimeSync();
+        showToast('ഫാക്ടറി കോഡ് അപ്‌‌‌‌ഡേറ്റ് ചെയ്തു!', 'info');
+      }
+    };
+
+    window.logoutFactoryCode = function() {
+      if (!requireAdminPermission()) return;
+      try { localStorage.removeItem('prod_factory_channel'); } catch(e){}
+      factorySyncChannel = '';
+      closeChannelModal();
+      openModal('factoryLockModal');
+      document.getElementById('initialAccessCodeInput').value = '';
+      if (mqttClient) {
+        try { mqttClient.end(true); } catch(e){}
+      }
+      updateSyncBadge(false);
+      updateChannelLabelDisplay();
+      showToast('ആപ്പ് ലോക്ക് ചെയ്തു', 'warning');
+    };
+
+    window.promptDeleteJob = function(jobId) {
+      if (!requireAdminPermission()) return;
+      pendingDeleteId = jobId;
+      openModal('deleteConfirmModal');
+    };
+
+    window.closeDeleteModal = function() {
+      pendingDeleteId = null;
+      closeModal('deleteConfirmModal');
+    };
+
+    window.executeDeleteJob = function() {
+      if (!requireAdminPermission() || !pendingDeleteId) return;
+      const jId = pendingDeleteId;
+      jobs = jobs.filter(j => j.id !== jId);
+      saveLocalJobs();
+      renderJobs();
+      closeDeleteModal();
+
+      broadcastMessage({
+        type: 'JOB_DELETE',
+        sender: currentUserId,
+        jobId: jId
+      });
+
+      broadcastRetainedSnapshot();
+      showToast('ഓർഡർ നീക്കം ചെയ്തു', 'warning');
+    };
+
+    window.openLightbox = function(imgSrc, caption) {
+      document.getElementById('lightboxImage').src = imgSrc;
+      document.getElementById('lightboxCaption').innerText = caption || '';
+      openModal('imageLightboxModal');
+    };
+
+    window.closeLightbox = function() {
+      closeModal('imageLightboxModal');
+    };
+
+    function openNewJobModal() {
+      document.getElementById('newJobForm').reset();
+      clearSelectedImage();
+      openModal('newJobModal');
+    }
+
+    window.closeNewJobModal = function() {
+      closeModal('newJobModal');
+    };
+
+    window.setTypeFilter = function(type) {
+      currentTypeFilter = type;
+      ['all', 'lanyard', 'pvc'].forEach(t => {
+        const btn = document.getElementById(`typeBtn-${t}`);
+        if (!btn) return;
+        btn.className = (t === type) ? 'filter-btn active' : 'filter-btn';
+      });
+      renderJobs();
+    };
+
+    window.setStatusFilter = function(status) {
+      currentStatusFilter = status;
+      ['all', 'pending', 'completed'].forEach(s => {
+        const btn = document.getElementById(`statusBtn-${s}`);
+        if (!btn) return;
+        btn.className = (s === status) ? 'filter-btn active-dark' : 'filter-btn';
+      });
+      renderJobs();
+    };
+
+    function updateSyncBadge(isConnected) {
+      const badge = document.getElementById('syncBadge');
+      const text = document.getElementById('syncBadgeText');
+      const dot = document.getElementById('syncDot');
+      if (!badge || !text) return;
+      if (isConnected) {
+        badge.style.background = 'rgba(16, 185, 129, 0.15)';
+        badge.style.color = '#34d399';
+        badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+        text.innerText = 'തത്സമയം ബന്ധിപ്പിച്ചു';
+        if (dot) dot.style.background = '#10b981';
+      } else {
+        badge.style.background = 'rgba(244, 63, 94, 0.15)';
+        badge.style.color = '#fb7185';
+        badge.style.borderColor = 'rgba(244, 63, 94, 0.3)';
+        text.innerText = 'ഓഫ്‌ലൈൻ മോഡ്';
+        if (dot) dot.style.background = '#f43f5e';
+      }
+    }
+
+    window.exportToExcel = function() {
+      if (jobs.length === 0) {
+        showToast('ബാക്കപ്പ് ചെയ്യാൻ ജോബുകൾ ലഭ്യമല്ല', 'warning');
+        return;
+      }
+
+      const headers = ['Job ID', 'Type', 'Title', 'Client', 'Quantity', 'Delivery Date', 'Product Status', 'Stages Completed', 'Notes', 'Created Time'];
+      
+      const rows = jobs.map(j => {
+        const completed = isJobCompleted(j);
+        const stagesList = getJobStages(j.jobType);
+        const doneList = stagesList.filter(s => j.stages && j.stages[s.id]).map(s => s.name).join(' | ');
+
+        return [
+          `"${j.id}"`,
+          `"${j.jobType === 'pvc' ? 'PVC Card' : 'Lanyard'}"`,
+          `"${(j.title || '').replace(/"/g, '""')}"`,
+          `"${(j.client || '').replace(/"/g, '""')}"`,
+          `"${j.quantity || ''}"`,
+          `"${j.deliveryDate || ''}"`,
+          `"${completed ? 'COMPLETED' : 'PENDING'}"`,
+          `"${doneList}"`,
+          `"${(j.notes || '').replace(/"/g, '""')}"`,
+          `"${new Date(j.createdAt).toLocaleString('en-IN')}"`
+        ];
+      });
+
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Production_Tracker_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      showToast('എക്സൽ ബാക്കപ്പ് ഫയൽ ഡൗൺലോഡ് ആയി!', 'success');
+    };
+
+    let toastTimer = null;
+    function showToast(message, type = 'default') {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+      if (!toast || !toastMessage) return;
+
+      clearTimeout(toastTimer);
+
+      let icon = '🔔';
+      if (type === 'success') icon = '🟢';
+      else if (type === 'warning') icon = '🔴';
+      else if (type === 'info') icon = '⚡';
+
+      toastIcon.innerText = icon;
+      toastMessage.innerText = message;
+
+      toast.classList.add('show');
+      toastTimer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    function timeAgo(timestamp) {
+      if (!timestamp) return 'ഇപ്പോൾ';
+      const sec = Math.floor((Date.now() - timestamp) / 1000);
+      if (sec < 60) return 'ഇപ്പോൾ';
+      const min = Math.floor(sec / 60);
+      if (min < 60) return `${min} മിനിറ്റ് മുൻപ്`;
+      const hrs = Math.floor(min / 60);
+      if (hrs < 24) return `${hrs} മണിക്കൂർ മുൻപ്`;
+      return `${Math.floor(hrs / 24)} ദിവസം മുൻപ്`;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      // Ensure all modal overlays are hidden initially
+      document.querySelectorAll('.app-modal').forEach(m => {
+        m.classList.remove('active');
+      });
+
+      if (!factorySyncChannel) {
+        openModal('factoryLockModal');
+      } else {
+        jobs = loadLocalJobs();
+        renderJobs();
+        initRealtimeSync();
+      }
+      updateRoleUI();
+    });
+  </script>
 </body>
 </html>
