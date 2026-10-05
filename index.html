@@ -1,10 +1,10 @@
 
-<!DOCTYPE html >
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>PrintoTrack Production System</title>
+  <title>PrintoTrack Production & Dispatch System</title>
   
   <!-- MQTT for Multi-Device Realtime Cloud Synchronization -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
@@ -374,6 +374,19 @@
       font-weight: 700;
     }
 
+    .stage-btn.dispatch-btn.done {
+      background: rgba(14, 165, 233, 0.18);
+      border-color: rgba(14, 165, 233, 0.6);
+      color: #38bdf8;
+    }
+
+    .stage-btn.delivered-btn.done {
+      background: rgba(16, 185, 129, 0.25);
+      border-color: #10b981;
+      color: #a7f3d0;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+    }
+
     .form-input {
       width: 100%;
       padding: 9px 12px;
@@ -484,8 +497,8 @@
 
         <div class="filter-group">
           <button id="statusBtn-all" onclick="setStatusFilter('all')" class="filter-btn active-dark">All Status</button>
-          <button id="statusBtn-pending" onclick="setStatusFilter('pending')" class="filter-btn">🔴 Pending</button>
-          <button id="statusBtn-completed" onclick="setStatusFilter('completed')" class="filter-btn">🟢 Completed</button>
+          <button id="statusBtn-pending" onclick="setStatusFilter('pending')" class="filter-btn">🔴 In-Progress</button>
+          <button id="statusBtn-completed" onclick="setStatusFilter('completed')" class="filter-btn">🟢 Delivered</button>
         </div>
 
         <!-- Date Filter Group -->
@@ -512,7 +525,7 @@
       </div>
 
       <div style="display: flex; align-items: center; gap: 8px;">
-        <input type="text" id="searchInput" oninput="renderJobs()" placeholder="🔍 Search orders, clients..." class="search-box">
+        <input type="text" id="searchInput" oninput="renderJobs()" placeholder="🔍 Search orders, tracking..." class="search-box">
         <span style="font-size: 11px; font-weight: bold; background: #0f172a; padding: 6px 10px; border-radius: 8px; border: 1px solid #1e293b; color: #94a3b8; white-space: nowrap;">
           Total: <span id="totalJobsCount" style="color: #10b981; font-family: monospace;">0</span>
           <span id="totalQtyBadge" style="margin-left: 4px; color: #38bdf8;"></span>
@@ -593,7 +606,7 @@
         👤
       </div>
       <h3 style="font-size: 16px; font-weight: 800; color: #ffffff;">Staff Account Login</h3>
-      <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 14px 0;">Sign in with your verified username and security PIN to make production updates.</p>
+      <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 14px 0;">Sign in with your verified username and security PIN to make production & dispatch updates.</p>
 
       <form onsubmit="handleAuthLoginSubmit(event)" style="text-align: left;">
         
@@ -666,7 +679,7 @@
   <div id="newJobModal" class="app-modal">
     <div class="modal-card" style="max-height: 92vh; display: flex; flex-direction: column;">
       <div style="padding: 14px 18px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between;">
-        <h3 style="font-size: 14px; font-weight: 800; color: #ffffff;">📝 New Production Order</h3>
+        <h3 style="font-size: 14px; font-weight: 800; color: #ffffff;">📝 New Production & Dispatch Order</h3>
         <button type="button" onclick="closeNewJobModal()" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;">✕</button>
       </div>
 
@@ -679,7 +692,7 @@
               <input type="radio" name="jobType" value="lanyard" checked style="accent-color: #10b981;">
               <div>
                 <div style="font-size: 12px; font-weight: 700; color: #ffffff;">🧵 Lanyard</div>
-                <div style="font-size: 10px; color: #94a3b8;">8 Stages</div>
+                <div style="font-size: 10px; color: #94a3b8;">10 Stages (Incl. Courier)</div>
               </div>
             </label>
 
@@ -687,7 +700,7 @@
               <input type="radio" name="jobType" value="pvc" style="accent-color: #10b981;">
               <div>
                 <div style="font-size: 12px; font-weight: 700; color: #ffffff;">💳 PVC Card</div>
-                <div style="font-size: 10px; color: #94a3b8;">5 Stages</div>
+                <div style="font-size: 10px; color: #94a3b8;">7 Stages (Incl. Courier)</div>
               </div>
             </label>
           </div>
@@ -710,9 +723,14 @@
             <input type="number" id="jobQuantity" placeholder="500" class="form-input">
           </div>
           <div>
-            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Delivery Date</label>
+            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Target Delivery Date</label>
             <input type="date" id="jobDelivery" class="form-input">
           </div>
+        </div>
+
+        <div>
+          <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Courier & Tracking Info (Optional)</label>
+          <input type="text" id="jobTracking" placeholder="e.g. DTDC / Professional Courier: TRK-987654" class="form-input">
         </div>
 
         <div>
@@ -732,7 +750,7 @@
 
         <div>
           <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Special Notes & Instructions</label>
-          <textarea id="jobNotes" rows="2" placeholder="Hook size, color code, packaging instructions..." class="form-input" style="resize: none;"></textarea>
+          <textarea id="jobNotes" rows="2" placeholder="Hook size, color code, destination address, special courier requests..." class="form-input" style="resize: none;"></textarea>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #1e293b; padding-top: 10px;">
@@ -747,7 +765,7 @@
   <!-- 5. Channel Settings Modal -->
   <div id="channelSettingsModal" class="app-modal">
     <div class="modal-card" style="padding: 20px; max-width: 340px;">
-      <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">⚙️ Channel Settings</h4>
+      <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">⚙️️ Channel Settings</h4>
       <p style="font-size: 11px; color: #94a3b8; margin-bottom: 12px;">Change the company sync channel code used to link all worker devices.</p>
       
       <div style="position: relative; margin-bottom: 14px;">
@@ -797,24 +815,28 @@
   </div>
 
   <script>
-    /* ================= SYSTEM CONFIGURATION ================= */
+    /* ================= SYSTEM CONFIGURATION WITH COURIER DISPATCH ================= */
     const LANYARD_STAGES = [
-      { id: 'confirmation', name: 'Confirmation', icon: '📝' },
-      { id: 'printing',     name: 'Printing',     icon: '🖨' },
-      { id: 'fusing',       name: 'Fusing',       icon: '⚡' },
-      { id: 'cutting',      name: 'Cutting',      icon: '✂' },
-      { id: 'stitching',    name: 'Stitching',    icon: '🧵' },
-      { id: 'clamping',     name: 'Clamping',     icon: '🗜️' },
-      { id: 'punching',     name: 'Punching',     icon: '🔘' },
-      { id: 'packing',      name: 'Packing',      icon: '📦' }
+      { id: 'confirmation',       name: 'Confirmation',        icon: '📝' },
+      { id: 'printing',           name: 'Printing',            icon: '🖨' },
+      { id: 'fusing',             name: 'Fusing',              icon: '⚡' },
+      { id: 'cutting',            name: 'Cutting',             icon: '✂' },
+      { id: 'stitching',          name: 'Stitching',           icon: '🧵' },
+      { id: 'clamping',           name: 'Clamping',            icon: '🗜️' },
+      { id: 'punching',           name: 'Punching',            icon: '🔘' },
+      { id: 'packing',            name: 'Packing',             icon: '📦' },
+      { id: 'courier_dispatched', name: 'Courier Dispatched',  icon: '🚚', isDispatch: true },
+      { id: 'delivered',          name: 'Delivered / Received',icon: '📬', isDelivered: true }
     ];
 
     const PVC_STAGES = [
-      { id: 'confirmation',      name: 'Confirmation',        icon: '📝' },
-      { id: 'scoring_soldering', name: 'Scoring / Soldering', icon: '⚡' },
-      { id: 'fusing',            name: 'Fusing',               icon: '🔥' },
-      { id: 'cutting',           name: 'Cutting',              icon: '✂️' },
-      { id: 'packing',           name: 'Packing',              icon: '📦' }
+      { id: 'confirmation',       name: 'Confirmation',        icon: '📝' },
+      { id: 'scoring_soldering',  name: 'Scoring / Soldering', icon: '⚡' },
+      { id: 'fusing',             name: 'Fusing',              icon: '🔥' },
+      { id: 'cutting',            name: 'Cutting',             icon: '✂️' },
+      { id: 'packing',            name: 'Packing',             icon: '📦' },
+      { id: 'courier_dispatched', name: 'Courier Dispatched',  icon: '🚚', isDispatch: true },
+      { id: 'delivered',          name: 'Delivered / Received',icon: '📬', isDelivered: true }
     ];
 
     /* High Availability Multi-Broker Cluster */
@@ -825,12 +847,12 @@
     ];
     let currentBrokerIndex = 0;
 
-    /* Built-in Predefined Verified Staff Accounts (Prevents Fake Names) */
+    /* Built-in Predefined Verified Staff Accounts */
     const DEFAULT_STAFF_ACCOUNTS = [
       { username: 'asif',       pin: '2026', name: 'Mhd Asif',        role: 'admin' },
       { username: 'supervisor', pin: '2026', name: 'Shift Supervisor', role: 'admin' },
       { username: 'operator1',  pin: '1234', name: 'Print Operator',  role: 'staff' },
-      { username: 'operator2',  pin: '1234', name: 'Fusing Staff',    role: 'staff' }
+      { username: 'operator2',  pin: '1234', name: 'Packing & Dispatch', role: 'staff' }
     ];
 
     /* Storage Helpers */
@@ -920,7 +942,6 @@
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
         }
         
-        // Auto-recovery fallback from legacy storage keys
         const legacyKeys = ['prod_data_PRINTO', 'prod_jobs_data', 'production_jobs'];
         for (const k of legacyKeys) {
           const legacy = safeGet(k);
@@ -956,7 +977,7 @@
         
         if (banner) banner.className = 'role-banner active-session';
         if (bannerIcon) bannerIcon.innerText = isMasterAdmin ? '👑' : '✓';
-        if (bannerText) bannerText.innerText = `Active Session: ${currentUserSession.name} (${currentUserSession.role.toUpperCase()}) - Authorized to update production.`;
+        if (bannerText) bannerText.innerText = `Active Session: ${currentUserSession.name} (${currentUserSession.role.toUpperCase()}) - Authorized to update production & courier status.`;
         if (bannerAction) {
           bannerAction.innerText = 'Logout';
           bannerAction.style.color = '#f43f5e';
@@ -1310,7 +1331,6 @@
       currentDateFilter = filterVal;
       const customInput = document.getElementById('customDateInput');
 
-      // Update button highlights
       ['all', 'today', 'yesterday'].forEach(btnKey => {
         const btn = document.getElementById(`dateBtn-${btnKey}`);
         if (!btn) return;
@@ -1337,7 +1357,6 @@
       const searchVal = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
       const dateMode = document.getElementById('dateFilterMode')?.value || 'activity';
 
-      // Compute target date string if filtering by date
       let targetDateStr = '';
       const now = new Date();
       if (currentDateFilter === 'today') {
@@ -1364,7 +1383,6 @@
           if (dateMode === 'activity') {
             const updatedDate = formatToDateString(job.updatedAt);
             const createdDate = formatToDateString(job.createdAt);
-            // Matches if worked on that day or created on that day
             if (updatedDate !== targetDateStr && createdDate !== targetDateStr) {
               return false;
             }
@@ -1380,9 +1398,10 @@
           const matchTitle = (job.title || '').toLowerCase().includes(searchVal);
           const matchClient = (job.client || '').toLowerCase().includes(searchVal);
           const matchNotes = (job.notes || '').toLowerCase().includes(searchVal);
+          const matchTracking = (job.trackingInfo || '').toLowerCase().includes(searchVal);
           const matchUser = (job.updatedByName || job.createdByName || '').toLowerCase().includes(searchVal);
           const matchId = (job.id || '').toLowerCase().includes(searchVal);
-          if (!matchTitle && !matchClient && !matchNotes && !matchId && !matchUser) return false;
+          if (!matchTitle && !matchClient && !matchNotes && !matchId && !matchUser && !matchTracking) return false;
         }
 
         const qty = parseInt(job.quantity, 10);
@@ -1419,6 +1438,16 @@
         const editorName = job.updatedByName || job.createdByName || 'Staff';
         const hasSession = !!currentUserSession;
 
+        const isDispatched = job.stages && job.stages['courier_dispatched'] === true;
+        const isDelivered = job.stages && job.stages['delivered'] === true;
+
+        let statusText = '⏳ IN-PRODUCTION';
+        if (isDelivered) {
+          statusText = '✓ DELIVERED TO CLIENT';
+        } else if (isDispatched) {
+          statusText = '🚚 COURIER IN-TRANSIT';
+        }
+
         return `
           <div class="job-card ${completed ? 'completed' : ''}">
             
@@ -1447,8 +1476,17 @@
                 `}
               </div>
 
+              ${job.trackingInfo ? `
+                <div style="margin-top: 8px; padding: 6px 10px; border-radius: 8px; background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.25); color: #7dd3fc; font-size: 11px; display: flex; align-items: center; gap: 6px;">
+                  <span>🚚</span>
+                  <div style="font-family: monospace; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                    ${escapeHtml(job.trackingInfo)}
+                  </div>
+                </div>
+              ` : ''}
+
               ${job.notes ? `
-                <div style="margin-top: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); color: #fde68a; font-size: 11px; display: flex; gap: 6px;">
+                <div style="margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); color: #fde68a; font-size: 11px; display: flex; gap: 6px;">
                   <span style="color: #fbbf24; font-weight: bold;">📌</span>
                   <div style="line-height: 1.4; word-break: break-word;">
                     <span style="font-weight: bold; color: #fcd34d;">Notes:</span> ${escapeHtml(job.notes)}
@@ -1462,10 +1500,10 @@
                   <div class="${completed ? 'light-green' : 'light-red'}"></div>
                   <div>
                     <div style="font-size: 9px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: ${completed ? '#34d399' : '#fb7185'};">
-                      PRODUCT STATUS
+                      ORDER LIFECYCLE
                     </div>
                     <div style="font-size: 11px; font-weight: 800; color: ${completed ? '#a7f3d0' : '#fecdd3'};">
-                      ${completed ? '✓ COMPLETED' : '⏳ PENDING'}
+                      ${statusText}
                     </div>
                   </div>
                 </div>
@@ -1490,15 +1528,19 @@
                 </div>
               </div>
 
-              <!-- Production Stages Grid -->
+              <!-- Production & Dispatch Stages Grid -->
               <div class="stages-grid">
                 ${stagesList.map(st => {
                   const isDone = job.stages && job.stages[st.id] === true;
+                  let customClass = '';
+                  if (st.isDispatch) customClass = 'dispatch-btn';
+                  if (st.isDelivered) customClass = 'delivered-btn';
+
                   return `
                     <button 
                       type="button"
                       onclick="handleStageToggleClick('${job.id}', '${st.id}')"
-                      class="stage-btn ${isDone ? 'done' : ''}"
+                      class="stage-btn ${customClass} ${isDone ? 'done' : ''}"
                       title="${hasSession ? 'Click to toggle stage status' : 'Login required'}"
                     >
                       <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 4px;">
@@ -1555,7 +1597,8 @@
       broadcastRetainedSnapshot();
 
       const done = job.stages[stageId];
-      showToast(`${job.title}: ${stageId} ${done ? 'Completed' : 'Reset'} (${currentUserSession.name})`, done ? 'success' : 'default');
+      const stageName = stageId === 'courier_dispatched' ? 'Courier Dispatched' : (stageId === 'delivered' ? 'Delivered & Received' : stageId);
+      showToast(`${job.title}: ${stageName} ${done ? 'Completed' : 'Reset'} (${currentUserSession.name})`, done ? 'success' : 'default');
     };
 
     /* Create New Job Form Handler */
@@ -1570,6 +1613,7 @@
       const client = document.getElementById('jobClient').value.trim();
       const quantity = document.getElementById('jobQuantity').value.trim();
       const deliveryDate = document.getElementById('jobDelivery').value;
+      const trackingInfo = document.getElementById('jobTracking').value.trim();
       const notes = document.getElementById('jobNotes').value.trim();
       const creatorName = currentUserSession.name;
 
@@ -1580,6 +1624,7 @@
         client: client,
         quantity: quantity,
         deliveryDate: deliveryDate,
+        trackingInfo: trackingInfo,
         notes: notes,
         proofImage: tempNewJobImage || null,
         stages: {},
@@ -1844,7 +1889,7 @@
       }
     }
 
-    /* Complete Excel / CSV Export with Audit Trail */
+    /* Complete Excel / CSV Export with Courier & Audit Trail */
     window.exportToExcel = function() {
       try {
         const searchVal = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
@@ -1861,7 +1906,6 @@
           targetDateStr = currentDateFilter;
         }
 
-        // Filter the jobs based on current active view/date selection
         const list = (Array.isArray(jobs) ? jobs : []).filter(job => {
           if (currentTypeFilter !== 'all' && (job.jobType || 'lanyard') !== currentTypeFilter) return false;
           const completed = isJobCompleted(job);
@@ -1884,9 +1928,10 @@
             const matchTitle = (job.title || '').toLowerCase().includes(searchVal);
             const matchClient = (job.client || '').toLowerCase().includes(searchVal);
             const matchNotes = (job.notes || '').toLowerCase().includes(searchVal);
+            const matchTracking = (job.trackingInfo || '').toLowerCase().includes(searchVal);
             const matchUser = (job.updatedByName || job.createdByName || '').toLowerCase().includes(searchVal);
             const matchId = (job.id || '').toLowerCase().includes(searchVal);
-            if (!matchTitle && !matchClient && !matchNotes && !matchId && !matchUser) return false;
+            if (!matchTitle && !matchClient && !matchNotes && !matchId && !matchUser && !matchTracking) return false;
           }
           return true;
         });
@@ -1897,11 +1942,14 @@
           'Job Title',
           'Client Name',
           'Quantity',
-          'Delivery Date',
-          'Product Status',
+          'Delivery Due Date',
+          'Order Status',
+          'Courier Dispatched?',
+          'Delivered to Client?',
+          'Courier / Tracking Info',
           'Completed Stages Count',
           'Total Stages',
-          'Completed Stages Details',
+          'Completed Stages List',
           'Special Notes',
           'Created By (Staff Name)',
           'Created Date & Time',
@@ -1927,6 +1975,9 @@
             }
           });
 
+          const isDispatched = j.stages && j.stages['courier_dispatched'] === true;
+          const isDelivered = j.stages && j.stages['delivered'] === true;
+
           const createdDateFormatted = j.createdAt ? new Date(j.createdAt).toLocaleString('en-IN') : '';
           const updatedDateFormatted = j.updatedAt ? new Date(j.updatedAt).toLocaleString('en-IN') : createdDateFormatted;
 
@@ -1937,7 +1988,10 @@
             sanitize(j.client),
             sanitize(j.quantity),
             sanitize(j.deliveryDate),
-            sanitize(completed ? 'COMPLETED' : 'PENDING'),
+            sanitize(isDelivered ? 'DELIVERED' : (isDispatched ? 'IN-TRANSIT' : 'IN-PRODUCTION')),
+            sanitize(isDispatched ? 'YES' : 'NO'),
+            sanitize(isDelivered ? 'YES' : 'NO'),
+            sanitize(j.trackingInfo || ''),
             sanitize(doneCount),
             sanitize(stagesList.length),
             sanitize(doneNames.join(' | ')),
@@ -1951,31 +2005,16 @@
 
         if (rows.length === 0) {
           rows.push([
-            '"NO_DATA"',
-            '""',
-            '"No orders matching current date or filter"',
-            '""',
-            '""',
-            '""',
-            '""',
-            '""',
-            '""',
-            '""',
-            '""',
-            '""',
-            '""',
-            '""',
-            '""'
+            '"NO_DATA"', '""', '"No orders matching current filter"', '""', '""', '""', '""', '""', '""', '""', '""', '""', '""', '""', '""', '""', '""', '""'
           ].join(','));
         }
 
         const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
         const dateTag = targetDateStr ? `_${targetDateStr}` : `_${new Date().toISOString().slice(0, 10)}`;
-        const fileName = `Production_Tracker${dateTag}.csv`;
+        const fileName = `Production_Dispatch_Report${dateTag}.csv`;
 
         let downloaded = false;
 
-        // Method 1: Blob Download
         try {
           const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
           if (window.navigator && window.navigator.msSaveOrOpenBlob) {
@@ -2002,7 +2041,6 @@
           downloaded = false;
         }
 
-        // Method 2: Mobile Fallback via Direct URI
         if (!downloaded) {
           const encodedUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
           const fallbackLink = document.createElement('a');
@@ -2016,7 +2054,7 @@
           }, 800);
         }
 
-        showToast(list.length > 0 ? 'Excel backup exported successfully!' : 'Sample Excel report generated!', 'success');
+        showToast(list.length > 0 ? 'Excel report exported successfully!' : 'Sample Excel report generated!', 'success');
       } catch (err) {
         showToast('Export error: ' + err.message, 'warning');
       }
