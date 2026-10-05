@@ -1,5 +1,5 @@
 
-<!DOCTYPE html>
+<!DOCTYPE html >
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -487,12 +487,35 @@
           <button id="statusBtn-pending" onclick="setStatusFilter('pending')" class="filter-btn">🔴 Pending</button>
           <button id="statusBtn-completed" onclick="setStatusFilter('completed')" class="filter-btn">🟢 Completed</button>
         </div>
+
+        <!-- Date Filter Group -->
+        <div class="filter-group" style="align-items: center;">
+          <span style="font-size: 11px; color: #94a3b8; padding: 0 4px;">📅</span>
+          <button id="dateBtn-all" onclick="setDateFilter('all')" class="filter-btn active">All Days</button>
+          <button id="dateBtn-today" onclick="setDateFilter('today')" class="filter-btn">Today</button>
+          <button id="dateBtn-yesterday" onclick="setDateFilter('yesterday')" class="filter-btn">Yesterday</button>
+          <input 
+            type="date" 
+            id="customDateInput" 
+            onchange="setDateFilter(this.value)" 
+            title="Pick a specific date"
+            style="background: #0f172a; border: 1px solid #1e293b; color: #10b981; font-size: 11px; padding: 3px 6px; border-radius: 6px; outline: none; cursor: pointer;"
+          >
+        </div>
+
+        <!-- Date Mode Selector -->
+        <select id="dateFilterMode" onchange="renderJobs()" style="background: #0b0f19; border: 1px solid #1e293b; color: #94a3b8; font-size: 11px; padding: 5px 8px; border-radius: 8px; outline: none; cursor: pointer;">
+          <option value="activity">Filter by: Work Activity Date</option>
+          <option value="created">Filter by: Order Created Date</option>
+          <option value="delivery">Filter by: Delivery Due Date</option>
+        </select>
       </div>
 
       <div style="display: flex; align-items: center; gap: 8px;">
         <input type="text" id="searchInput" oninput="renderJobs()" placeholder="🔍 Search orders, clients..." class="search-box">
         <span style="font-size: 11px; font-weight: bold; background: #0f172a; padding: 6px 10px; border-radius: 8px; border: 1px solid #1e293b; color: #94a3b8; white-space: nowrap;">
           Total: <span id="totalJobsCount" style="color: #10b981; font-family: monospace;">0</span>
+          <span id="totalQtyBadge" style="margin-left: 4px; color: #38bdf8;"></span>
         </span>
       </div>
     </div>
@@ -580,7 +603,7 @@
             type="text" 
             id="authUsernameInput" 
             required 
-            placeholder="e.g. david / position" 
+            placeholder="e.g. name / position" 
             class="form-input"
             autocomplete="username"
             style="text-transform: lowercase;"
@@ -831,6 +854,7 @@
     let isCodeVisible = false;
     let currentTypeFilter = 'all';
     let currentStatusFilter = 'all';
+    let currentDateFilter = 'all'; // 'all', 'today', 'yesterday', or 'YYYY-MM-DD'
 
     /* User Authentication Session */
     let currentUserSession = loadUserSession();
@@ -1270,11 +1294,62 @@
       return stages.every(s => job.stages && job.stages[s.id] === true);
     }
 
+    /* Helper: Format Timestamp to YYYY-MM-DD */
+    function formatToDateString(timestampOrStr) {
+      if (!timestampOrStr) return '';
+      const d = new Date(timestampOrStr);
+      if (isNaN(d.getTime())) return '';
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    /* Date Filter Setter */
+    window.setDateFilter = function(filterVal) {
+      currentDateFilter = filterVal;
+      const customInput = document.getElementById('customDateInput');
+
+      // Update button highlights
+      ['all', 'today', 'yesterday'].forEach(btnKey => {
+        const btn = document.getElementById(`dateBtn-${btnKey}`);
+        if (!btn) return;
+        if (filterVal === btnKey) {
+          btn.className = 'filter-btn active';
+        } else {
+          btn.className = 'filter-btn';
+        }
+      });
+
+      if (filterVal !== 'all' && filterVal !== 'today' && filterVal !== 'yesterday') {
+        if (customInput) customInput.value = filterVal;
+      } else {
+        if (customInput && filterVal === 'all') customInput.value = '';
+      }
+
+      renderJobs();
+    };
+
     /* Render Jobs Cards */
     function renderJobs() {
       const container = document.getElementById('jobsGrid');
       const emptyState = document.getElementById('emptyState');
       const searchVal = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+      const dateMode = document.getElementById('dateFilterMode')?.value || 'activity';
+
+      // Compute target date string if filtering by date
+      let targetDateStr = '';
+      const now = new Date();
+      if (currentDateFilter === 'today') {
+        targetDateStr = formatToDateString(now);
+      } else if (currentDateFilter === 'yesterday') {
+        const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        targetDateStr = formatToDateString(yesterday);
+      } else if (currentDateFilter !== 'all') {
+        targetDateStr = currentDateFilter;
+      }
+
+      let totalPcs = 0;
 
       const filtered = jobs.filter(job => {
         if (currentTypeFilter !== 'all' && (job.jobType || 'lanyard') !== currentTypeFilter) {
@@ -1284,6 +1359,23 @@
         if (currentStatusFilter === 'pending' && completed) return false;
         if (currentStatusFilter === 'completed' && !completed) return false;
 
+        // Date Matching Logic
+        if (targetDateStr) {
+          if (dateMode === 'activity') {
+            const updatedDate = formatToDateString(job.updatedAt);
+            const createdDate = formatToDateString(job.createdAt);
+            // Matches if worked on that day or created on that day
+            if (updatedDate !== targetDateStr && createdDate !== targetDateStr) {
+              return false;
+            }
+          } else if (dateMode === 'created') {
+            const createdDate = formatToDateString(job.createdAt);
+            if (createdDate !== targetDateStr) return false;
+          } else if (dateMode === 'delivery') {
+            if (job.deliveryDate !== targetDateStr) return false;
+          }
+        }
+
         if (searchVal) {
           const matchTitle = (job.title || '').toLowerCase().includes(searchVal);
           const matchClient = (job.client || '').toLowerCase().includes(searchVal);
@@ -1292,10 +1384,18 @@
           const matchId = (job.id || '').toLowerCase().includes(searchVal);
           if (!matchTitle && !matchClient && !matchNotes && !matchId && !matchUser) return false;
         }
+
+        const qty = parseInt(job.quantity, 10);
+        if (!isNaN(qty)) totalPcs += qty;
+
         return true;
       });
 
       document.getElementById('totalJobsCount').innerText = filtered.length;
+      const qtyBadge = document.getElementById('totalQtyBadge');
+      if (qtyBadge) {
+        qtyBadge.innerText = totalPcs > 0 ? `(${totalPcs.toLocaleString()} pcs)` : '';
+      }
 
       if (filtered.length === 0) {
         container.innerHTML = '';
@@ -1747,7 +1847,49 @@
     /* Complete Excel / CSV Export with Audit Trail */
     window.exportToExcel = function() {
       try {
-        const list = Array.isArray(jobs) ? jobs : [];
+        const searchVal = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+        const dateMode = document.getElementById('dateFilterMode')?.value || 'activity';
+
+        let targetDateStr = '';
+        const now = new Date();
+        if (currentDateFilter === 'today') {
+          targetDateStr = formatToDateString(now);
+        } else if (currentDateFilter === 'yesterday') {
+          const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          targetDateStr = formatToDateString(yesterday);
+        } else if (currentDateFilter !== 'all') {
+          targetDateStr = currentDateFilter;
+        }
+
+        // Filter the jobs based on current active view/date selection
+        const list = (Array.isArray(jobs) ? jobs : []).filter(job => {
+          if (currentTypeFilter !== 'all' && (job.jobType || 'lanyard') !== currentTypeFilter) return false;
+          const completed = isJobCompleted(job);
+          if (currentStatusFilter === 'pending' && completed) return false;
+          if (currentStatusFilter === 'completed' && !completed) return false;
+
+          if (targetDateStr) {
+            if (dateMode === 'activity') {
+              const updatedDate = formatToDateString(job.updatedAt);
+              const createdDate = formatToDateString(job.createdAt);
+              if (updatedDate !== targetDateStr && createdDate !== targetDateStr) return false;
+            } else if (dateMode === 'created') {
+              if (formatToDateString(job.createdAt) !== targetDateStr) return false;
+            } else if (dateMode === 'delivery') {
+              if (job.deliveryDate !== targetDateStr) return false;
+            }
+          }
+
+          if (searchVal) {
+            const matchTitle = (job.title || '').toLowerCase().includes(searchVal);
+            const matchClient = (job.client || '').toLowerCase().includes(searchVal);
+            const matchNotes = (job.notes || '').toLowerCase().includes(searchVal);
+            const matchUser = (job.updatedByName || job.createdByName || '').toLowerCase().includes(searchVal);
+            const matchId = (job.id || '').toLowerCase().includes(searchVal);
+            if (!matchTitle && !matchClient && !matchNotes && !matchId && !matchUser) return false;
+          }
+          return true;
+        });
 
         const headers = [
           'Job ID',
@@ -1809,26 +1951,27 @@
 
         if (rows.length === 0) {
           rows.push([
-            '"SAMPLE_01"',
-            '"Lanyard"',
-            '"Sample Order"',
-            '"Sample Client"',
-            '"500"',
+            '"NO_DATA"',
             '""',
-            '"PENDING"',
-            '"0"',
-            '"8"',
+            '"No orders matching current date or filter"',
             '""',
-            '"No orders yet in app"',
-            '"Manager"',
             '""',
-            '"Supervisor"',
+            '""',
+            '""',
+            '""',
+            '""',
+            '""',
+            '""',
+            '""',
+            '""',
+            '""',
             '""'
           ].join(','));
         }
 
         const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
-        const fileName = `Production_Tracker_${new Date().toISOString().slice(0, 10)}.csv`;
+        const dateTag = targetDateStr ? `_${targetDateStr}` : `_${new Date().toISOString().slice(0, 10)}`;
+        const fileName = `Production_Tracker${dateTag}.csv`;
 
         let downloaded = false;
 
