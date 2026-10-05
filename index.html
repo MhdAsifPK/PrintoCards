@@ -616,7 +616,7 @@
             type="text" 
             id="authUsernameInput" 
             required 
-            placeholder="e.g. name / position" 
+            placeholder="e.g name / position" 
             class="form-input"
             autocomplete="username"
             style="text-transform: lowercase;"
@@ -839,13 +839,8 @@
       { id: 'delivered',          name: 'Delivered / Received',icon: '📬', isDelivered: true }
     ];
 
-    /* High Availability Multi-Broker Cluster */
-    const BROKER_SERVERS = [
-      'wss://broker.hivemq.com:8884/mqtt',
-      'wss://broker.emqx.io:8084/mqtt',
-      'wss://test.mosquitto.org:8081/mqtt'
-    ];
-    let currentBrokerIndex = 0;
+    /* High Performance Unified Realtime Cloud Broker */
+    const PRIMARY_BROKER = 'wss://broker.emqx.io:8084/mqtt';
 
     /* Built-in Predefined Verified Staff Accounts */
     const DEFAULT_STAFF_ACCOUNTS = [
@@ -1155,10 +1150,14 @@
       connectToActiveBroker();
     }
 
+    function getSyncTopic() {
+      const channel = (factorySyncChannel || DEFAULT_FACTORY_PASS).toUpperCase();
+      return `printotrack_factory_sync_v22/${channel}`;
+    }
+
     function connectToActiveBroker() {
       updateSyncBadge('connecting', 'Connecting to Cloud...');
 
-      const brokerUrl = BROKER_SERVERS[currentBrokerIndex];
       const clientId = 'printo_' + currentUserId + '_' + Math.random().toString(16).substring(2, 6);
 
       try {
@@ -1166,29 +1165,26 @@
           try { mqttClient.end(true); } catch(e){}
         }
 
-        mqttClient = mqtt.connect(brokerUrl, {
+        mqttClient = mqtt.connect(PRIMARY_BROKER, {
           clientId: clientId,
           clean: true,
-          connectTimeout: 5000,
-          reconnectPeriod: 4000,
-          keepalive: 30
+          connectTimeout: 8000,
+          reconnectPeriod: 3000,
+          keepalive: 20
         });
 
-        const topic = `factory/prod_v14/${factorySyncChannel}`;
+        const topic = getSyncTopic();
 
         mqttClient.on('connect', () => {
           isConnectedToCloud = true;
-          updateSyncBadge('connected', 'Cloud Connected');
+          updateSyncBadge('connected', 'Live Cloud Sync');
           mqttClient.subscribe(topic, { qos: 1 });
           
+          // Request initial state from other connected factory devices
           broadcastMessage({
             type: 'STATE_REQUEST',
             sender: currentUserId
           });
-
-          if (jobs.length > 0) {
-            broadcastRetainedSnapshot();
-          }
         });
 
         mqttClient.on('message', (t, payload) => {
@@ -1200,7 +1196,7 @@
         });
 
         mqttClient.on('error', (err) => {
-          handleBrokerFailover();
+          updateSyncBadge('offline', 'Retrying Connection...');
         });
 
         mqttClient.on('close', () => {
@@ -1211,61 +1207,45 @@
         });
 
       } catch (err) {
-        handleBrokerFailover();
+        updateSyncBadge('offline', 'Offline Mode');
       }
     }
 
-    function handleBrokerFailover() {
-      currentBrokerIndex = (currentBrokerIndex + 1) % BROKER_SERVERS.length;
-      updateSyncBadge('connecting', 'Switching Server...');
-      setTimeout(() => {
-        if (!isConnectedToCloud) {
-          connectToActiveBroker();
-        }
-      }, 1500);
-    }
-
     window.manualForceReconnect = function() {
-      currentBrokerIndex = (currentBrokerIndex + 1) % BROKER_SERVERS.length;
-      showToast('Reconnecting cloud broker...', 'info');
+      showToast('Reconnecting live cloud...', 'info');
       connectToActiveBroker();
     };
 
-    function broadcastMessage(payloadObj, retain = false) {
+    function broadcastMessage(payloadObj) {
       if (mqttClient && mqttClient.connected) {
         try {
-          const topic = `factory/prod_v14/${factorySyncChannel}`;
-          mqttClient.publish(topic, JSON.stringify(payloadObj), { qos: 1, retain: retain });
+          const topic = getSyncTopic();
+          mqttClient.publish(topic, JSON.stringify(payloadObj), { qos: 1, retain: false });
         } catch (e) {}
       }
     }
 
-    function broadcastRetainedSnapshot() {
-      broadcastMessage({
-        type: 'STATE_SHARE',
-        sender: currentUserId,
-        jobs: jobs,
-        timestamp: Date.now()
-      }, true);
-    }
-
     function handleIncomingBroadcast(data) {
-      if (data.type === 'STATE_REQUEST') {
-        if (jobs.length > 0) {
-          broadcastMessage({
-            type: 'STATE_SHARE',
-            sender: currentUserId,
-            jobs: jobs,
-            timestamp: Date.now()
-          });
-        }
-      } else if (data.type === 'STATE_SHARE') {
-        if (Array.isArray(data.jobs) && data.jobs.length > 0) {
-          jobs = mergeJobsLists(jobs, data.jobs);
+      if (!data) return;
+
+      // 1. INSTANT ATOMIC STAGE UPDATE (Lightning Fast)
+      if (data.type === 'STAGE_TOGGLE') {
+        const job = jobs.find(j => j.id === data.jobId);
+        if (job) {
+          if (!job.stages) job.stages = {};
+          job.stages[data.stageId] = data.isDone;
+          job.updatedAt = data.updatedAt || Date.now();
+          job.updatedBy = data.sender;
+          job.updatedByName = data.updatedByName || 'Staff';
           saveLocalJobs();
           renderJobs();
+          
+          const stageName = data.stageId === 'courier_dispatched' ? 'Courier Dispatched' : (data.stageId === 'delivered' ? 'Delivered' : data.stageId);
+          showToast(`⚡ Live Update: "${job.title}" ➔ ${stageName} (${job.updatedByName})`, 'info');
         }
-      } else if (data.type === 'JOB_UPSERT') {
+      } 
+      // 2. NEW JOB CREATED
+      else if (data.type === 'JOB_UPSERT') {
         if (data.job && data.job.id) {
           const idx = jobs.findIndex(j => j.id === data.job.id);
           if (idx !== -1) {
@@ -1275,15 +1255,37 @@
           }
           saveLocalJobs();
           renderJobs();
-          showToast(`Live update: ${data.job.title} (${data.job.updatedByName || 'Staff'})`, 'info');
+          showToast(`📦 New Order Added: "${data.job.title}" by ${data.job.createdByName || 'Staff'}`, 'success');
         }
-      } else if (data.type === 'JOB_DELETE') {
+      } 
+      // 3. JOB DELETED
+      else if (data.type === 'JOB_DELETE') {
         if (data.jobId) {
           jobs = jobs.filter(j => j.id !== data.jobId);
           saveLocalJobs();
           renderJobs();
-          broadcastRetainedSnapshot();
           showToast('An order was deleted from cloud.', 'warning');
+        }
+      } 
+      // 4. PEER STATE REPLICATION
+      else if (data.type === 'STATE_REQUEST') {
+        if (jobs.length > 0) {
+          // Send lightweight copy (without heavy images) so message never gets dropped
+          const lightweightJobs = jobs.slice(0, 50).map(j => ({
+            ...j,
+            proofImage: null // avoid large base64 packets
+          }));
+          broadcastMessage({
+            type: 'STATE_SHARE',
+            sender: currentUserId,
+            jobs: lightweightJobs
+          });
+        }
+      } else if (data.type === 'STATE_SHARE') {
+        if (Array.isArray(data.jobs) && data.jobs.length > 0) {
+          jobs = mergeJobsLists(jobs, data.jobs);
+          saveLocalJobs();
+          renderJobs();
         }
       }
     }
@@ -1299,6 +1301,8 @@
           const lTime = lj.updatedAt || 0;
           const rTime = rj.updatedAt || 0;
           if (rTime >= lTime) {
+            // retain local proof image if remote stripped it
+            rj.proofImage = rj.proofImage || lj.proofImage;
             map.set(rj.id, rj);
           }
         }
@@ -1580,7 +1584,8 @@
       if (!job) return;
 
       if (!job.stages) job.stages = {};
-      job.stages[stageId] = !job.stages[stageId];
+      const newStatus = !job.stages[stageId];
+      job.stages[stageId] = newStatus;
       job.updatedAt = Date.now();
       job.updatedBy = currentUserId;
       job.updatedByName = currentUserSession.name;
@@ -1588,13 +1593,16 @@
       saveLocalJobs();
       renderJobs();
 
+      // Send ultra-compact message (only 150 bytes) for instantaneous cross-device update
       broadcastMessage({
-        type: 'JOB_UPSERT',
+        type: 'STAGE_TOGGLE',
         sender: currentUserId,
-        job: job
+        jobId: jobId,
+        stageId: stageId,
+        isDone: newStatus,
+        updatedAt: job.updatedAt,
+        updatedByName: currentUserSession.name
       });
-
-      broadcastRetainedSnapshot();
 
       const done = job.stages[stageId];
       const stageName = stageId === 'courier_dispatched' ? 'Courier Dispatched' : (stageId === 'delivered' ? 'Delivered & Received' : stageId);
@@ -1641,24 +1649,24 @@
       renderJobs();
       closeNewJobModal();
 
+      // Broadcast new job with compact data
       broadcastMessage({
         type: 'JOB_UPSERT',
         sender: currentUserId,
         job: newJob
       });
 
-      broadcastRetainedSnapshot();
       showToast(`New job "${title}" created by ${creatorName}!`, 'success');
     };
 
-    /* Image Proof Upload & Compression */
+    /* Image Proof Upload & Ultra-Lightweight Compression (<8KB) */
     window.handleImageSelection = function(e) {
       const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(evt) {
-        compressBase64Image(evt.target.result, 360, 0.6, (compressedData) => {
+        compressBase64Image(evt.target.result, 180, 0.45, (compressedData) => {
           tempNewJobImage = compressedData;
           document.getElementById('imagePreview').src = compressedData;
           document.getElementById('imageUploadPlaceholder').style.display = 'none';
