@@ -4,35 +4,33 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>PrintoTrack Production System</title>
-​<!-- Realtime Cloud Engine -->
+​<!-- Realtime Sync Engine Only -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
 ​<style>
-/* Full Dark Theme Styles - Bulletproof Inbuilt */
+/* 100% PURE BUILT-IN CSS - ZERO EXTERNAL CSS DEPENDENCIES */
 *, *::before, *::after {
 box-sizing: border-box;
 margin: 0;
 padding: 0;
 -webkit-tap-highlight-color: transparent;
 }
-​body {
+​html, body {
 background-color: #030712 !important;
 color: #f3f4f6 !important;
 font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 min-height: 100vh;
 display: flex;
 flex-direction: column;
-margin: 0;
-padding: 0;
 }
-​/* Modal Absolute Protection */
+​/* Modals Control */
 .app-modal {
-display: none !important;
+display: none;
 position: fixed;
 inset: 0;
-z-index: 999;
-background: rgba(3, 7, 18, 0.88);
-backdrop-filter: blur(8px);
--webkit-backdrop-filter: blur(8px);
+z-index: 9999;
+background: rgba(3, 7, 18, 0.85);
+backdrop-filter: blur(6px);
+-webkit-backdrop-filter: blur(6px);
 align-items: center;
 justify-content: center;
 padding: 16px;
@@ -40,38 +38,48 @@ padding: 16px;
 ​.app-modal.active {
 display: flex !important;
 }
-​/* Indicator Lights */
+​.modal-card {
+background: #0f172a;
+border: 1px solid #1e293b;
+border-radius: 18px;
+width: 100%;
+max-width: 420px;
+box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+overflow: hidden;
+color: #f8fafc;
+}
+​/* Lights */
 .light-green {
-width: 18px;
-height: 18px;
+width: 16px;
+height: 16px;
 border-radius: 50%;
 background: radial-gradient(circle, #10b981 0%, #047857 100%);
-box-shadow: 0 0 16px #10b981, 0 0 28px rgba(16, 185, 129, 0.6);
+box-shadow: 0 0 14px #10b981, 0 0 24px rgba(16, 185, 129, 0.5);
 animation: pulse-green 1.8s infinite;
 flex-shrink: 0;
 }
 ​@keyframes pulse-green {
-0%, 100% { transform: scale(1); box-shadow: 0 0 12px #10b981; }
-50% { transform: scale(1.08); box-shadow: 0 0 22px #34d399; }
+0%, 100% { transform: scale(1); box-shadow: 0 0 10px #10b981; }
+50% { transform: scale(1.1); box-shadow: 0 0 20px #34d399; }
 }
 ​.light-red {
-width: 18px;
-height: 18px;
+width: 16px;
+height: 16px;
 border-radius: 50%;
 background: radial-gradient(circle, #f43f5e 0%, #be123c 100%);
-box-shadow: 0 0 16px #f43f5e, 0 0 28px rgba(244, 63, 94, 0.6);
+box-shadow: 0 0 14px #f43f5e, 0 0 24px rgba(244, 63, 94, 0.5);
 animation: pulse-red 1.8s infinite;
 flex-shrink: 0;
 }
 ​@keyframes pulse-red {
-0%, 100% { transform: scale(1); box-shadow: 0 0 12px #f43f5e; }
-50% { transform: scale(1.08); box-shadow: 0 0 22px #fb7185; }
+0%, 100% { transform: scale(1); box-shadow: 0 0 10px #f43f5e; }
+50% { transform: scale(1.1); box-shadow: 0 0 20px #fb7185; }
 }
-​/* UI Components */
+​/* Header & Nav */
 .header-bar {
 position: sticky;
 top: 0;
-z-index: 50;
+z-index: 100;
 background: #0f172a;
 border-bottom: 1px solid #1e293b;
 }
@@ -99,7 +107,6 @@ display: flex;
 align-items: center;
 justify-content: center;
 font-size: 20px;
-font-weight: 900;
 color: #030712;
 box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
@@ -112,38 +119,6 @@ letter-spacing: -0.5px;
 ​.brand-title span {
 color: #10b981;
 }
-​.btn {
-padding: 8px 14px;
-border-radius: 10px;
-font-size: 12px;
-font-weight: 700;
-border: 1px solid transparent;
-cursor: pointer;
-display: inline-flex;
-align-items: center;
-gap: 6px;
-transition: all 0.15s ease;
-color: #f8fafc;
-}
-​.btn:active {
-transform: scale(0.96);
-}
-​.btn-emerald {
-background: linear-gradient(135deg, #10b981, #059669);
-color: #030712 !important;
-font-weight: 800;
-box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
-}
-​.btn-dark {
-background: #1e293b;
-color: #e2e8f0;
-border: 1px solid #334155;
-}
-​.btn-admin-active {
-background: rgba(245, 158, 11, 0.18);
-color: #fbbf24 !important;
-border: 1px solid rgba(245, 158, 11, 0.5);
-}
 ​.sub-bar {
 max-width: 1200px;
 margin: 0 auto;
@@ -155,16 +130,51 @@ align-items: center;
 justify-content: space-between;
 gap: 10px;
 }
-​.filter-group {
+​/* Buttons */
+.btn {
+padding: 8px 14px;
+border-radius: 10px;
+font-size: 12px;
+font-weight: 700;
+border: 1px solid transparent;
+cursor: pointer;
+display: inline-flex;
+align-items: center;
+gap: 6px;
+transition: all 0.15s ease;
+color: #f8fafc;
+text-decoration: none;
+}
+​.btn:active {
+transform: scale(0.97);
+}
+​.btn-emerald {
+background: linear-gradient(135deg, #10b981, #059669);
+color: #030712 !important;
+font-weight: 800;
+box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+​.btn-dark {
+background: #1e293b;
+color: #e2e8f0;
+border: 1px solid #334155;
+}
+​.btn-admin-active {
+background: rgba(245, 158, 11, 0.18);
+color: #fbbf24 !important;
+border: 1px solid rgba(245, 158, 11, 0.5);
+}
+​/* Filters */
+.filter-group {
 display: flex;
 background: #0b0f19;
-padding: 4px;
+padding: 3px;
 border-radius: 10px;
 border: 1px solid #1e293b;
-gap: 4px;
+gap: 3px;
 }
 ​.filter-btn {
-padding: 6px 11px;
+padding: 6px 10px;
 border-radius: 7px;
 font-size: 11px;
 font-weight: 600;
@@ -197,7 +207,8 @@ max-width: 220px;
 ​.search-box:focus {
 border-color: #10b981;
 }
-​.main-wrap {
+​/* Main Container */
+.main-wrap {
 max-width: 1200px;
 width: 100%;
 margin: 0 auto;
@@ -221,7 +232,8 @@ background: rgba(245, 158, 11, 0.12);
 border-color: rgba(245, 158, 11, 0.4);
 color: #fde68a;
 }
-​.jobs-grid {
+​/* Cards Grid */
+.jobs-grid {
 display: grid;
 grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
 gap: 16px;
@@ -234,7 +246,7 @@ padding: 16px;
 display: flex;
 flex-direction: column;
 justify-content: space-between;
-box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 ​.job-card.completed {
 border-color: rgba(16, 185, 129, 0.4);
@@ -298,15 +310,6 @@ border-color: rgba(16, 185, 129, 0.6);
 color: #6ee7b7;
 font-weight: 700;
 }
-​.modal-card {
-background: #0f172a;
-border: 1px solid #1e293b;
-border-radius: 20px;
-width: 100%;
-max-width: 440px;
-box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
-overflow: hidden;
-}
 ​.form-input {
 width: 100%;
 padding: 9px 12px;
@@ -320,12 +323,13 @@ outline: none;
 ​.form-input:focus {
 border-color: #10b981;
 }
-​#toast {
+​/* Toast */
+#toast {
 display: none;
 position: fixed;
 bottom: 24px;
 right: 24px;
-z-index: 1000;
+z-index: 10000;
 padding: 10px 16px;
 border-radius: 12px;
 background: #0f172a;
@@ -342,9 +346,9 @@ display: flex !important;
 }
 </style>
 </head>
-<body style="background-color: #030712 !important; color: #f3f4f6 !important; margin: 0; padding: 0;">
+<body>
 ​<!-- Main Header -->
-<header class="header-bar" style="background: #0f172a; border-bottom: 1px solid #1e293b;">
+<header class="header-bar">
 <div class="header-content">
 <div class="brand-wrap">
 <div class="brand-icon">⚙️</div>
@@ -426,9 +430,9 @@ display: flex !important;
 </button>
 </div>
 ​</main>
-​<!-- Modals - All Strict Hidden -->
+​<!-- Modals -->
 ​<!-- 1. Factory Code Entry Modal -->
-<div id="factoryLockModal" class="app-modal" style="display: none !important;">
+<div id="factoryLockModal" class="app-modal">
 <div class="modal-card" style="padding: 24px; text-align: center; max-width: 360px;">
 <div style="width: 50px; height: 50px; border-radius: 14px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981; display:flex; align-items:center; justify-content:center; font-size: 24px; margin: 0 auto 14px auto;">
 🔒
@@ -457,7 +461,7 @@ style="font-family: monospace; text-transform: uppercase; color: #10b981; font-w
 </div>
 </div>
 ​<!-- 2. Admin PIN Modal -->
-<div id="adminLoginModal" class="app-modal" style="display: none !important;">
+<div id="adminLoginModal" class="app-modal">
 <div class="modal-card" style="padding: 24px; text-align: center; max-width: 320px;">
 <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; display:flex; align-items:center; justify-content:center; font-size: 22px; margin: 0 auto 12px auto;">
 👑
@@ -481,7 +485,7 @@ style="text-align: center; font-family: monospace; letter-spacing: 4px; font-siz
 </div>
 </div>
 ​<!-- 3. New Job Modal -->
-<div id="newJobModal" class="app-modal" style="display: none !important;">
+<div id="newJobModal" class="app-modal">
 <div class="modal-card" style="max-height: 90vh; display: flex; flex-direction: column;">
 <div style="padding: 14px 18px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between;">
 <h3 style="font-size: 14px; font-weight: 800; color: #ffffff;">📝 പുതിയ പ്രൊഡക്ഷൻ ഓർഡർ</h3>
@@ -553,7 +557,7 @@ style="text-align: center; font-family: monospace; letter-spacing: 4px; font-siz
 </div>
 </div>
 ​<!-- 4. Channel Settings Modal -->
-<div id="channelSettingsModal" class="app-modal" style="display: none !important;">
+<div id="channelSettingsModal" class="app-modal">
 <div class="modal-card" style="padding: 20px; max-width: 340px;">
 <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">⚙️ ഫാക്ടറി കോഡ് മാറ്റുക</h4>
 <p style="font-size: 11px; color: #94a3b8; margin-bottom: 12px;">ജീവനക്കാർ കണക്റ്റ് ചെയ്യുന്ന രഹസ്യ സിങ്ക് കോഡ് ഇവിടെ മാറ്റാം.</p>
@@ -571,10 +575,10 @@ style="text-align: center; font-family: monospace; letter-spacing: 4px; font-siz
 </div>
 </div>
 ​<!-- 5. Delete Confirm Modal -->
-<div id="deleteConfirmModal" class="app-modal" style="display: none !important;">
+<div id="deleteConfirmModal" class="app-modal">
 <div class="modal-card" style="padding: 20px; text-align: center; max-width: 300px;">
 <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.4); color: #f43f5e; display:flex; align-items:center; justify-content:center; font-size: 20px; margin: 0 auto 10px auto;">
-🗑️
+🗑
 </div>
 <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 4px;">ഈ ജോബ് ഒഴിവാക്കണമോ?</h4>
 <p style="font-size: 11px; color: #94a3b8; margin-bottom: 14px;">ഇത് എല്ലാ ഫോണുകളിൽ നിന്നും ഒഴിവാക്കപ്പെടും.</p>
@@ -585,7 +589,7 @@ style="text-align: center; font-family: monospace; letter-spacing: 4px; font-siz
 </div>
 </div>
 ​<!-- 6. Lightbox Modal -->
-<div id="imageLightboxModal" class="app-modal" style="display: none !important;" onclick="closeLightbox()">
+<div id="imageLightboxModal" class="app-modal" onclick="closeLightbox()">
 <div style="position: relative; max-width: 90vw; max-height: 85vh;" onclick="event.stopPropagation()">
 <button onclick="closeLightbox()" style="position: absolute; top: -35px; right: 0; background: #1e293b; color: #ffffff; border: none; padding: 4px 10px; border-radius: 20px; font-size: 11px; cursor: pointer;">✕ ക്ലോസ്</button>
 <img id="lightboxImage" src="" style="max-width: 100%; max-height: 80vh; border-radius: 12px; border: 1px solid #334155; object-fit: contain;">
@@ -603,7 +607,7 @@ const LANYARD_STAGES = [
 { id: 'confirmation', name: 'Confirmation', icon: '📝' },
 { id: 'printing',     name: 'Printing',     icon: '🖨' },
 { id: 'fusing',       name: 'Fusing',       icon: '⚡' },
-{ id: 'cutting',      name: 'Cutting',      icon: '✂️️' },
+{ id: 'cutting',      name: 'Cutting',      icon: '✂' },
 { id: 'stitching',    name: 'Stitching',    icon: '🧵' },
 { id: 'clamping',     name: 'Clamping',     icon: '🗜️' },
 { id: 'punching',     name: 'Punching',     icon: '🔘' },
@@ -743,7 +747,6 @@ openNewJobModal();
 ​function openModal(id) {
 const el = document.getElementById(id);
 if (el) {
-el.style.display = 'flex';
 el.classList.add('active');
 }
 }
@@ -751,7 +754,6 @@ el.classList.add('active');
 const el = document.getElementById(id);
 if (el) {
 el.classList.remove('active');
-el.style.display = 'none';
 }
 }
 ​function initRealtimeSync() {
@@ -1305,7 +1307,6 @@ return String(str)
 window.addEventListener('DOMContentLoaded', () => {
 document.querySelectorAll('.app-modal').forEach(m => {
 m.classList.remove('active');
-m.style.display = 'none';
 });
 ​if (!factorySyncChannel) {
 openModal('factoryLockModal');
@@ -1318,4 +1319,4 @@ updateRoleUI();
 });
 </script>
 </body>
-  </html>
+</html>
