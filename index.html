@@ -1,15 +1,16 @@
 
 <!DOCTYPE html>
-<html lang="ml">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>PrintoTrack Production System</title>
   
-  <!-- Standalone MQTT Library for Realtime Multi-Device Sync -->
+  <!-- MQTT for Multi-Device Realtime Cloud Synchronization -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
 
   <style>
+    /* PURE ZERO-DEPENDENCY NATIVE CSS - ULTRA FAST & LIGHTWEIGHT */
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
@@ -20,13 +21,49 @@
     html, body {
       background-color: #030712 !important;
       color: #f3f4f6 !important;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Malayalam", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       overflow-x: hidden;
     }
 
+    /* Modals System */
+    .app-modal {
+      display: none !important;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(3, 7, 18, 0.88);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .app-modal.active {
+      display: flex !important;
+    }
+
+    .modal-card {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 18px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.85);
+      overflow: hidden;
+      color: #f8fafc;
+      animation: modal-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes modal-pop {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    /* Status Indicator Lights */
     .light-green {
       width: 14px;
       height: 14px;
@@ -57,6 +94,7 @@
       50% { transform: scale(1.15); box-shadow: 0 0 20px #fb7185; }
     }
 
+    /* Top Navbars */
     .header-bar {
       position: sticky;
       top: 0;
@@ -119,6 +157,7 @@
       gap: 10px;
     }
 
+    /* Buttons */
     .btn {
       padding: 8px 14px;
       border-radius: 10px;
@@ -152,13 +191,14 @@
       border: 1px solid #334155;
     }
 
-    .btn-admin-active {
-      background: rgba(245, 158, 11, 0.2);
-      color: #fbbf24 !important;
-      border: 1px solid rgba(245, 158, 11, 0.6);
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+    .btn-user-active {
+      background: rgba(16, 185, 129, 0.16);
+      color: #34d399 !important;
+      border: 1px solid rgba(16, 185, 129, 0.5);
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
     }
 
+    /* Filter Controls */
     .filter-group {
       display: flex;
       background: #0b0f19;
@@ -201,7 +241,7 @@
       color: #e2e8f0;
       outline: none;
       width: 100%;
-      max-width: 200px;
+      max-width: 220px;
       transition: border-color 0.2s;
     }
 
@@ -209,6 +249,7 @@
       border-color: #10b981;
     }
 
+    /* Main Container */
     .main-wrap {
       max-width: 1200px;
       width: 100%;
@@ -231,12 +272,13 @@
       gap: 8px;
     }
 
-    .role-banner.admin {
-      background: rgba(245, 158, 11, 0.12);
-      border-color: rgba(245, 158, 11, 0.45);
-      color: #fde68a;
+    .role-banner.active-session {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.45);
+      color: #a7f3d0;
     }
 
+    /* Production Cards */
     .jobs-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -332,40 +374,6 @@
       font-weight: 700;
     }
 
-    .app-modal {
-      display: none !important;
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      background: rgba(3, 7, 18, 0.88);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      align-items: center;
-      justify-content: center;
-      padding: 16px;
-    }
-
-    .app-modal.active {
-      display: flex !important;
-    }
-
-    .modal-card {
-      background: #0f172a;
-      border: 1px solid #1e293b;
-      border-radius: 18px;
-      width: 100%;
-      max-width: 440px;
-      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.85);
-      overflow: hidden;
-      color: #f8fafc;
-      animation: modal-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    @keyframes modal-pop {
-      from { transform: scale(0.95); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-
     .form-input {
       width: 100%;
       padding: 9px 12px;
@@ -382,6 +390,7 @@
       border-color: #10b981;
     }
 
+    /* Toast Notification */
     #toast {
       display: none;
       position: fixed;
@@ -413,6 +422,7 @@
 </head>
 <body>
 
+  <!-- Top Navigation Header -->
   <header class="header-bar">
     <div class="header-content">
       <div class="brand-wrap">
@@ -420,77 +430,89 @@
         <div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <h1 class="brand-title">PRINTO<span>TRACK</span></h1>
-            <span id="syncBadge" style="font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #1e293b; color: #94a3b8; border: 1px solid #334155; display: inline-flex; align-items: center; gap: 4px;">
-              <span id="syncDot" style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#64748b;"></span>
-              <span id="syncBadgeText">തത്സമയം ബന്ധിപ്പിക്കുന്നു...</span>
+            <span id="syncBadge" onclick="manualForceReconnect()" style="cursor: pointer; font-size: 11px; padding: 3px 8px; border-radius: 999px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Click to reconnect cloud sync">
+              <span id="syncDot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#f59e0b;"></span>
+              <span id="syncBadgeText">Connecting...</span>
             </span>
           </div>
           <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #94a3b8; margin-top: 2px;">
-            <span>ഫാക്ടറി:</span>
+            <span>Channel:</span>
             <span id="channelCodeDisplay" style="font-family: monospace; font-weight: bold; color: #10b981; background: #1e293b; padding: 1px 6px; border-radius: 4px; border: 1px solid #334155;">
               ••••••••
             </span>
-            <button onclick="toggleSecretVisibility()" style="background:none; border:none; color:#94a3b8; cursor:pointer;" title="കോഡ് കാണുക/മറയ്ക്കുക">👁</button>
-            <button onclick="handleChannelSettingsClick()" style="background:none; border:none; color:#94a3b8; cursor:pointer;" title="സെറ്റിംഗ്സ്">⚙️</button>
+            <button onclick="toggleSecretVisibility()" style="background:none; border:none; color:#94a3b8; cursor:pointer;" title="View/Hide Channel Code">👁</button>
+            <button onclick="handleChannelSettingsClick()" style="background:none; border:none; color:#94a3b8; cursor:pointer;" title="Channel Settings">⚙️</button>
           </div>
         </div>
       </div>
 
       <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-        <button id="adminRoleBtn" onclick="toggleAdminLoginModal()" class="btn btn-dark">
-          <span id="adminRoleIcon">🔒</span>
-          <span id="adminRoleText">അഡ്മിൻ ലോഗിൻ</span>
+        <!-- Auth / Login Button -->
+        <button id="authBtn" onclick="toggleAuthModal()" class="btn btn-dark">
+          <span id="authIcon">👤</span>
+          <span id="authText">Staff Login</span>
         </button>
 
-        <button onclick="exportToExcel()" class="btn btn-dark" title="ഡാറ്റ എക്സലിലേക്ക് സേവ് ചെയ്യുക">
+        <!-- Manage Users (Admin Only) -->
+        <button id="manageUsersBtn" onclick="openManageUsersModal()" class="btn btn-dark" style="display: none;" title="Manage Staff Accounts">
+          <span>👥</span>
+          <span>Accounts</span>
+        </button>
+
+        <!-- Excel Export Button -->
+        <button type="button" onclick="exportToExcel()" class="btn btn-dark" title="Export production data to Excel/CSV">
           <span>📊</span>
-          <span>എക്സൽ</span>
+          <span>Excel</span>
         </button>
 
+        <!-- Create New Job Button -->
         <button onclick="handleNewJobClick()" class="btn btn-emerald">
           <span style="font-size: 14px; font-weight: 900;">+</span>
-          <span>പുതിയ ജോബ്</span>
+          <span>New Job</span>
         </button>
       </div>
     </div>
 
+    <!-- Filters & Search Bar -->
     <div class="sub-bar">
       <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
         <div class="filter-group">
-          <button id="typeBtn-all" onclick="setTypeFilter('all')" class="filter-btn active">എല്ലാം</button>
-          <button id="typeBtn-lanyard" onclick="setTypeFilter('lanyard')" class="filter-btn">🧵 ലന്യാർഡ്</button>
-          <button id="typeBtn-pvc" onclick="setTypeFilter('pvc')" class="filter-btn">💳 പിവിസി കാർഡ്</button>
+          <button id="typeBtn-all" onclick="setTypeFilter('all')" class="filter-btn active">All Products</button>
+          <button id="typeBtn-lanyard" onclick="setTypeFilter('lanyard')" class="filter-btn">🧵 Lanyard</button>
+          <button id="typeBtn-pvc" onclick="setTypeFilter('pvc')" class="filter-btn">💳 PVC Card</button>
         </div>
 
         <div class="filter-group">
-          <button id="statusBtn-all" onclick="setStatusFilter('all')" class="filter-btn active-dark">എല്ലാ സ്റ്റാറ്റസും</button>
-          <button id="statusBtn-pending" onclick="setStatusFilter('pending')" class="filter-btn">🔴 പെൻഡിംഗ്</button>
-          <button id="statusBtn-completed" onclick="setStatusFilter('completed')" class="filter-btn">🟢 പൂർത്തിയായി</button>
+          <button id="statusBtn-all" onclick="setStatusFilter('all')" class="filter-btn active-dark">All Status</button>
+          <button id="statusBtn-pending" onclick="setStatusFilter('pending')" class="filter-btn">🔴 Pending</button>
+          <button id="statusBtn-completed" onclick="setStatusFilter('completed')" class="filter-btn">🟢 Completed</button>
         </div>
       </div>
 
       <div style="display: flex; align-items: center; gap: 8px;">
-        <input type="text" id="searchInput" oninput="renderJobs()" placeholder="🔍 തിരയുക..." class="search-box">
+        <input type="text" id="searchInput" oninput="renderJobs()" placeholder="🔍 Search orders, clients..." class="search-box">
         <span style="font-size: 11px; font-weight: bold; background: #0f172a; padding: 6px 10px; border-radius: 8px; border: 1px solid #1e293b; color: #94a3b8; white-space: nowrap;">
-          ആകെ: <span id="totalJobsCount" style="color: #10b981; font-family: monospace;">0</span>
+          Total: <span id="totalJobsCount" style="color: #10b981; font-family: monospace;">0</span>
         </span>
       </div>
     </div>
   </header>
 
+  <!-- Main Content Wrap -->
   <main class="main-wrap">
     
+    <!-- User Session Banner -->
     <div id="roleBanner" class="role-banner">
       <div style="display: flex; align-items: center; gap: 8px;">
-        <span id="roleBannerIcon" style="font-size: 16px;">👁️</span>
-        <span id="roleBannerText">സാധാരണ മോഡ്: മാറ്റങ്ങൾ കാണാൻ മാത്രം സാധിക്കും. എഡിറ്റ് ചെയ്യാൻ അഡ്മിൻ ലോഗിൻ ചെയ്യുക.</span>
+        <span id="roleBannerIcon" style="font-size: 16px;">👁</span>
+        <span id="roleBannerText">View-Only Mode: Log in with your staff account to add or update orders.</span>
       </div>
-      <button id="roleBannerAction" onclick="toggleAdminLoginModal()" style="background:none; border:none; color:#10b981; font-weight:bold; cursor:pointer; text-decoration:underline; font-size:11px; white-space: nowrap;">
-        അഡ്മിൻ കോഡ് നൽകുക
+      <button id="roleBannerAction" onclick="toggleAuthModal()" style="background:none; border:none; color:#10b981; font-weight:bold; cursor:pointer; text-decoration:underline; font-size:11px; white-space: nowrap;">
+        Staff Login
       </button>
     </div>
 
-    <!-- Production Jobs Grid -->
+    <!-- Jobs Grid Container -->
     <div id="jobsGrid" class="jobs-grid"></div>
 
     <!-- Empty State -->
@@ -498,33 +520,36 @@
       <div style="width: 60px; height: 60px; border-radius: 16px; background:#0f172a; border:1px solid #1e293b; display:flex; align-items:center; justify-content:center; font-size:26px; margin:0 auto 12px auto;">
         📦
       </div>
-      <h3 style="font-size: 15px; font-weight: 700; color: #cbd5e1;">ജോബുകൾ ഒന്നും ചേർത്തിട്ടില്ല</h3>
-      <p style="font-size: 12px; color: #64748b; margin-top: 4px;">പുതിയ ഓർഡർ ചേർക്കാൻ മുകളിലെ പച്ച ബട്ടൺ അമർത്തുക (അഡ്മിൻ മാത്രം).</p>
+      <h3 style="font-size: 15px; font-weight: 700; color: #cbd5e1;">No Production Jobs Found</h3>
+      <p style="font-size: 12px; color: #64748b; margin-top: 4px;">Click the green button above to add a new production order (Login required).</p>
       <button onclick="handleNewJobClick()" class="btn btn-emerald" style="margin-top: 14px;">
-        + പുതിയ ജോബ് ചേർക്കുക
+        + Create First Job
       </button>
     </div>
 
   </main>
 
+  <!-- ================= MODALS ================= -->
+
+  <!-- 1. Factory Security Code Modal -->
   <div id="factoryLockModal" class="app-modal">
     <div class="modal-card" style="padding: 24px; text-align: center; max-width: 360px;">
       <div style="width: 50px; height: 50px; border-radius: 14px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981; display:flex; align-items:center; justify-content:center; font-size: 24px; margin: 0 auto 14px auto;">
         🔒
       </div>
-      <h3 style="font-size: 17px; font-weight: 800; color: #ffffff;">ഫാക്ടറി ആക്സസ് കോഡ്</h3>
+      <h3 style="font-size: 17px; font-weight: 800; color: #ffffff;">Factory Security Access</h3>
       <p style="font-size: 12px; color: #94a3b8; margin: 6px 0 16px 0; line-height: 1.4;">
-        നിങ്ങളുടെ സ്ഥാപനത്തിന്റെ പ്രൊഡക്ഷൻ ട്രാക്കർ തുറക്കാൻ സെക്യൂരിറ്റി കോഡ് ടൈപ്പ് ചെയ്യുക.
+        Enter your company security code to connect to the production cloud.
       </p>
 
       <form onsubmit="handleInitialCodeSubmit(event)" style="text-align: left;">
-        <label style="display: block; font-size: 11px; font-weight: 600; color: #cbd5e1; margin-bottom: 4px;">രഹസ്യ കോഡ് *</label>
+        <label style="display: block; font-size: 11px; font-weight: 600; color: #cbd5e1; margin-bottom: 4px;">Security Code *</label>
         <div style="position: relative; margin-bottom: 14px;">
           <input 
             type="password" 
             id="initialAccessCodeInput" 
             required 
-            placeholder="കോഡ് നൽകുക" 
+            placeholder="ENTER FACTORY CODE" 
             class="form-input" 
             style="font-family: monospace; text-transform: uppercase; color: #10b981; font-weight: bold; letter-spacing: 2px;"
           >
@@ -532,62 +557,114 @@
         </div>
 
         <button type="submit" class="btn btn-emerald" style="width: 100%; justify-content: center; padding: 10px;">
-          ട്രാക്കർ തുറക്കുക ➔
+          Unlock System ➔
         </button>
       </form>
     </div>
   </div>
 
-  <div id="adminLoginModal" class="app-modal">
-    <div class="modal-card" style="padding: 24px; text-align: center; max-width: 320px;">
-      <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); color: #fbbf24; display:flex; align-items:center; justify-content:center; font-size: 22px; margin: 0 auto 12px auto;">
-        👑
+  <!-- 2. Secure Staff Account Login Modal -->
+  <div id="authModal" class="app-modal">
+    <div class="modal-card" style="padding: 24px; text-align: center; max-width: 340px;">
+      <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #10b981; display:flex; align-items:center; justify-content:center; font-size: 22px; margin: 0 auto 12px auto;">
+        👤
       </div>
-      <h3 style="font-size: 16px; font-weight: 800; color: #ffffff;">അഡ്മിൻ ആക്സസ് PIN</h3>
-      <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 14px 0;">മാറ്റങ്ങൾ വരുത്താൻ മാനേജറുടെ രഹസ്യ PIN നൽകുക.</p>
+      <h3 style="font-size: 16px; font-weight: 800; color: #ffffff;">Staff Account Login</h3>
+      <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 14px 0;">Sign in with your verified username and security PIN to make production updates.</p>
 
-      <form onsubmit="handleAdminLoginSubmit(event)">
-        <input 
-          type="password" 
-          id="adminPinInput" 
-          required 
-          placeholder="••••••" 
-          class="form-input" 
-          style="text-align: center; font-family: monospace; letter-spacing: 4px; font-size: 16px; color: #10b981; margin-bottom: 14px;"
-        >
+      <form onsubmit="handleAuthLoginSubmit(event)" style="text-align: left;">
+        
+        <div style="margin-bottom: 10px;">
+          <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Username *</label>
+          <input 
+            type="text" 
+            id="authUsernameInput" 
+            required 
+            placeholder="e.g. asif / supervisor" 
+            class="form-input"
+            autocomplete="username"
+            style="text-transform: lowercase;"
+          >
+        </div>
+
+        <div style="margin-bottom: 14px;">
+          <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Account PIN / Password *</label>
+          <input 
+            type="password" 
+            id="authPinInput" 
+            required 
+            placeholder="••••••" 
+            class="form-input" 
+            style="text-align: center; font-family: monospace; letter-spacing: 4px; font-size: 16px; color: #10b981;"
+            autocomplete="current-password"
+          >
+        </div>
+
         <div style="display: flex; gap: 8px;">
-          <button type="button" onclick="closeAdminLoginModal()" class="btn btn-dark" style="flex: 1; justify-content: center;">റദ്ദാക്കുക</button>
-          <button type="submit" class="btn btn-emerald" style="flex: 1; justify-content: center;">അൺലോക്ക്</button>
+          <button type="button" onclick="closeAuthModal()" class="btn btn-dark" style="flex: 1; justify-content: center;">Cancel</button>
+          <button type="submit" class="btn btn-emerald" style="flex: 1; justify-content: center;">Sign In</button>
         </div>
       </form>
     </div>
   </div>
 
+  <!-- 3. Manage Accounts Modal (Admin Only) -->
+  <div id="manageUsersModal" class="app-modal">
+    <div class="modal-card" style="padding: 20px; max-width: 380px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 8px;">
+        <h4 style="font-size: 14px; font-weight: 800; color: #ffffff;">👥 Manage Staff Accounts</h4>
+        <button type="button" onclick="closeManageUsersModal()" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;">✕</button>
+      </div>
+
+      <!-- Add New Staff Form -->
+      <form onsubmit="handleAddNewUser(event)" style="background: #0b0f19; padding: 12px; border-radius: 12px; border: 1px solid #1e293b; margin-bottom: 14px;">
+        <div style="font-size: 11px; font-weight: 700; color: #10b981; margin-bottom: 8px;">+ Register New Staff Account</div>
+        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 6px; margin-bottom: 6px;">
+          <input type="text" id="newStaffName" placeholder="Full Name (e.g. Rahul)" required class="form-input">
+          <input type="text" id="newStaffUsername" placeholder="User ID" required class="form-input" style="text-transform: lowercase;">
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
+          <input type="password" id="newStaffPin" placeholder="PIN (e.g. 1234)" required class="form-input">
+          <select id="newStaffRole" class="form-input">
+            <option value="staff">Staff / Operator</option>
+            <option value="admin">Admin / Supervisor</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-emerald" style="width: 100%; justify-content: center; padding: 6px;">Add Account</button>
+      </form>
+
+      <!-- Existing Accounts List -->
+      <div style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">Registered Accounts:</div>
+      <div id="accountsListContainer" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;"></div>
+    </div>
+  </div>
+
+  <!-- 4. Create New Job Modal -->
   <div id="newJobModal" class="app-modal">
     <div class="modal-card" style="max-height: 92vh; display: flex; flex-direction: column;">
       <div style="padding: 14px 18px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between;">
-        <h3 style="font-size: 14px; font-weight: 800; color: #ffffff;">📝 പുതിയ പ്രൊഡക്ഷൻ ഓർഡർ</h3>
+        <h3 style="font-size: 14px; font-weight: 800; color: #ffffff;">📝 New Production Order</h3>
         <button type="button" onclick="closeNewJobModal()" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;">✕</button>
       </div>
 
       <form id="newJobForm" onsubmit="handleCreateJob(event)" style="padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
         
         <div>
-          <label style="display:block; font-size:11px; font-weight:700; color:#cbd5e1; margin-bottom:6px;">പ്രൊഡക്റ്റ് ടൈപ്പ് *</label>
+          <label style="display:block; font-size:11px; font-weight:700; color:#cbd5e1; margin-bottom:6px;">Product Type *</label>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
             <label style="display: flex; align-items: center; gap: 8px; background: #0b0f19; border: 1px solid #334155; padding: 10px; border-radius: 10px; cursor: pointer;">
               <input type="radio" name="jobType" value="lanyard" checked style="accent-color: #10b981;">
               <div>
-                <div style="font-size: 12px; font-weight: 700; color: #ffffff;">🧵 ലന്യാർഡ്</div>
-                <div style="font-size: 10px; color: #94a3b8;">8 ഘട്ടങ്ങൾ</div>
+                <div style="font-size: 12px; font-weight: 700; color: #ffffff;">🧵 Lanyard</div>
+                <div style="font-size: 10px; color: #94a3b8;">8 Stages</div>
               </div>
             </label>
 
             <label style="display: flex; align-items: center; gap: 8px; background: #0b0f19; border: 1px solid #334155; padding: 10px; border-radius: 10px; cursor: pointer;">
               <input type="radio" name="jobType" value="pvc" style="accent-color: #10b981;">
               <div>
-                <div style="font-size: 12px; font-weight: 700; color: #ffffff;">💳 പിവിസി കാർഡ്</div>
-                <div style="font-size: 10px; color: #94a3b8;">5 ഘട്ടങ്ങൾ</div>
+                <div style="font-size: 12px; font-weight: 700; color: #ffffff;">💳 PVC Card</div>
+                <div style="font-size: 10px; color: #94a3b8;">5 Stages</div>
               </div>
             </label>
           </div>
@@ -595,59 +672,60 @@
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
           <div>
-            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">ജോബ് പേര് *</label>
+            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Job Title *</label>
             <input type="text" id="jobTitle" required placeholder="e.g. ABC College ID" class="form-input">
           </div>
           <div>
-            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">ക്ലയന്റ് / സ്ഥാപനം</label>
+            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Client / Company</label>
             <input type="text" id="jobClient" placeholder="e.g. Media Wings" class="form-input">
           </div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
           <div>
-            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">എണ്ണം (Quantity)</label>
+            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Quantity (Pcs)</label>
             <input type="number" id="jobQuantity" placeholder="500" class="form-input">
           </div>
           <div>
-            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">ഡെലിവറി തീയതി</label>
+            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Delivery Date</label>
             <input type="date" id="jobDelivery" class="form-input">
           </div>
         </div>
 
         <div>
-          <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">പ്രൂഫ് ചിത്രം (Proof Image)</label>
+          <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Proof Artwork / Image</label>
           <div style="border: 2px dashed #334155; border-radius: 10px; padding: 12px; text-align: center; position: relative; background: #0b0f19;">
             <input type="file" id="jobImageInput" accept="image/*" onchange="handleImageSelection(event)" style="position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;">
             <div id="imageUploadPlaceholder">
               <span style="font-size: 20px;">📷</span>
-              <div style="font-size: 11px; color: #cbd5e1; margin-top: 2px;">ചിത്രം തിരഞ്ഞെടുക്കുക</div>
+              <div style="font-size: 11px; color: #cbd5e1; margin-top: 2px;">Upload Proof Artwork</div>
             </div>
             <div id="imagePreviewContainer" style="display: none; align-items: center; justify-content: center; gap: 10px;">
               <img id="imagePreview" src="" alt="Proof Preview" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1px solid #10b981;">
-              <button type="button" onclick="clearSelectedImage(event)" style="background: none; border: none; color: #f43f5e; font-size: 11px; text-decoration: underline; cursor: pointer;">ഒഴിവാക്കുക</button>
+              <button type="button" onclick="clearSelectedImage(event)" style="background: none; border: none; color: #f43f5e; font-size: 11px; text-decoration: underline; cursor: pointer;">Remove</button>
             </div>
           </div>
         </div>
 
         <div>
-          <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">കുറിപ്പ് (Notes)</label>
-          <textarea id="jobNotes" rows="2" placeholder="നിർദ്ദേശങ്ങൾ, പ്രത്യേകതകൾ..." class="form-input" style="resize: none;"></textarea>
+          <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Special Notes & Instructions</label>
+          <textarea id="jobNotes" rows="2" placeholder="Hook size, color code, packaging instructions..." class="form-input" style="resize: none;"></textarea>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #1e293b; padding-top: 10px;">
-          <button type="button" onclick="closeNewJobModal()" class="btn btn-dark">റദ്ദാക്കുക</button>
-          <button type="submit" class="btn btn-emerald">ഓർഡർ സേവ് ചെയ്യുക</button>
+          <button type="button" onclick="closeNewJobModal()" class="btn btn-dark">Cancel</button>
+          <button type="submit" class="btn btn-emerald">Save Order</button>
         </div>
 
       </form>
     </div>
   </div>
 
+  <!-- 5. Channel Settings Modal -->
   <div id="channelSettingsModal" class="app-modal">
     <div class="modal-card" style="padding: 20px; max-width: 340px;">
-      <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">⚙️ ഫാക്ടറി കോഡ് മാറ്റുക</h4>
-      <p style="font-size: 11px; color: #94a3b8; margin-bottom: 12px;">ജീവനക്കാർ കണക്റ്റ് ചെയ്യുന്ന രഹസ്യ സിങ്ക് കോഡ് ഇവിടെ മാറ്റാം.</p>
+      <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">⚙️ Channel Settings</h4>
+      <p style="font-size: 11px; color: #94a3b8; margin-bottom: 12px;">Change the company sync channel code used to link all worker devices.</p>
       
       <div style="position: relative; margin-bottom: 14px;">
         <input type="password" id="inputCustomChannel" class="form-input" style="font-family: monospace; text-transform: uppercase; color: #10b981; font-weight: bold;">
@@ -655,45 +733,48 @@
       </div>
 
       <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #1e293b; padding-top: 10px;">
-        <button type="button" onclick="logoutFactoryCode()" style="background: none; border: none; color: #f43f5e; font-size: 11px; text-decoration: underline; cursor: pointer;">ആപ്പ് ലോക്ക് ചെയ്യുക</button>
+        <button type="button" onclick="logoutFactoryCode()" style="background: none; border: none; color: #f43f5e; font-size: 11px; text-decoration: underline; cursor: pointer;">Lock Application</button>
         <div style="display: flex; gap: 6px;">
-          <button type="button" onclick="closeChannelModal()" class="btn btn-dark" style="padding: 6px 10px;">ക്ലോസ്</button>
-          <button type="button" onclick="saveChannelModal()" class="btn btn-emerald" style="padding: 6px 12px;">സേവ്</button>
+          <button type="button" onclick="closeChannelModal()" class="btn btn-dark" style="padding: 6px 10px;">Close</button>
+          <button type="button" onclick="saveChannelModal()" class="btn btn-emerald" style="padding: 6px 12px;">Save</button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- 6. Delete Confirm Modal -->
   <div id="deleteConfirmModal" class="app-modal">
     <div class="modal-card" style="padding: 20px; text-align: center; max-width: 300px;">
       <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.4); color: #f43f5e; display:flex; align-items:center; justify-content:center; font-size: 20px; margin: 0 auto 10px auto;">
         🗑
       </div>
-      <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 4px;">ഈ ജോബ് ഒഴിവാക്കണമോ?</h4>
-      <p style="font-size: 11px; color: #94a3b8; margin-bottom: 14px;">ഇത് എല്ലാ ഫോണുകളിൽ നിന്നും ഒഴിവാക്കപ്പെടും.</p>
+      <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 4px;">Delete this Job?</h4>
+      <p style="font-size: 11px; color: #94a3b8; margin-bottom: 14px;">This order will be permanently removed from all connected devices.</p>
       
       <div style="display: flex; gap: 8px;">
-        <button type="button" onclick="closeDeleteModal()" class="btn btn-dark" style="flex: 1; justify-content: center;">വേണ്ട</button>
-        <button type="button" onclick="executeDeleteJob()" class="btn" style="flex: 1; justify-content: center; background: #e11d48; color: #ffffff;">കളയുക</button>
+        <button type="button" onclick="closeDeleteModal()" class="btn btn-dark" style="flex: 1; justify-content: center;">Cancel</button>
+        <button type="button" onclick="executeDeleteJob()" class="btn" style="flex: 1; justify-content: center; background: #e11d48; color: #ffffff;">Delete</button>
       </div>
     </div>
   </div>
 
+  <!-- 7. Lightbox Modal -->
   <div id="imageLightboxModal" class="app-modal" onclick="closeLightbox()">
     <div style="position: relative; max-width: 90vw; max-height: 85vh;" onclick="event.stopPropagation()">
-      <button type="button" onclick="closeLightbox()" style="position: absolute; top: -35px; right: 0; background: #1e293b; color: #ffffff; border: none; padding: 4px 10px; border-radius: 20px; font-size: 11px; cursor: pointer;">✕ ക്ലോസ്</button>
-      <img id="lightboxImage" src="" alt="Proof Preview Full" style="max-width: 100%; max-height: 80vh; border-radius: 12px; border: 1px solid #334155; object-fit: contain;">
+      <button type="button" onclick="closeLightbox()" style="position: absolute; top: -35px; right: 0; background: #1e293b; color: #ffffff; border: none; padding: 4px 10px; border-radius: 20px; font-size: 11px; cursor: pointer;">✕ Close</button>
+      <img id="lightboxImage" src="" alt="Full Artwork Proof" style="max-width: 100%; max-height: 80vh; border-radius: 12px; border: 1px solid #334155; object-fit: contain;">
       <div id="lightboxCaption" style="text-align: center; font-size: 12px; color: #e2e8f0; margin-top: 6px;"></div>
     </div>
   </div>
 
+  <!-- Toast Notification Box -->
   <div id="toast">
     <span id="toastIcon">🔔</span>
-    <span id="toastMessage">അറിയിപ്പ്</span>
+    <span id="toastMessage">Notification</span>
   </div>
 
   <script>
-    /* Production Workflow Stage Definitions */
+    /* ================= SYSTEM CONFIGURATION ================= */
     const LANYARD_STAGES = [
       { id: 'confirmation', name: 'Confirmation', icon: '📝' },
       { id: 'printing',     name: 'Printing',     icon: '🖨' },
@@ -713,7 +794,23 @@
       { id: 'packing',           name: 'Packing',              icon: '📦' }
     ];
 
-    /* Storage Helpers with Error Isolation */
+    /* High Availability Multi-Broker Cluster */
+    const BROKER_SERVERS = [
+      'wss://broker.hivemq.com:8884/mqtt',
+      'wss://broker.emqx.io:8084/mqtt',
+      'wss://test.mosquitto.org:8081/mqtt'
+    ];
+    let currentBrokerIndex = 0;
+
+    /* Built-in Predefined Verified Staff Accounts (Prevents Fake Names) */
+    const DEFAULT_STAFF_ACCOUNTS = [
+      { username: 'asif',       pin: '2026', name: 'Mhd Asif',        role: 'admin' },
+      { username: 'supervisor', pin: '2026', name: 'Shift Supervisor', role: 'admin' },
+      { username: 'operator1',  pin: '1234', name: 'Print Operator',  role: 'staff' },
+      { username: 'operator2',  pin: '1234', name: 'Fusing Staff',    role: 'staff' }
+    ];
+
+    /* Storage Helpers */
     function safeGet(key, defVal = '') {
       try { const v = localStorage.getItem(key); return v !== null ? v : defVal; } catch(e) { return defVal; }
     }
@@ -727,7 +824,7 @@
       try { sessionStorage.setItem(key, val); } catch(e) {}
     }
 
-    /* Core Application Variables */
+    /* Core Variables */
     let currentUserId = getOrCreateUserId();
     const DEFAULT_FACTORY_PASS = 'PRINTO';
     let factorySyncChannel = safeGet('prod_factory_channel', '');
@@ -735,13 +832,13 @@
     let currentTypeFilter = 'all';
     let currentStatusFilter = 'all';
 
-    let isAdmin = safeSessionGet('prod_is_admin') === 'true';
-    const STORED_ADMIN_PIN = '2026';
-    
+    /* User Authentication Session */
+    let currentUserSession = loadUserSession();
     let jobs = [];
     let tempNewJobImage = null;
     let pendingDeleteId = null;
     let mqttClient = null;
+    let isConnectedToCloud = false;
 
     function getOrCreateUserId() {
       let id = safeGet('prod_user_id');
@@ -756,6 +853,41 @@
       return `prod_data_${factorySyncChannel || DEFAULT_FACTORY_PASS}`;
     }
 
+    function loadStaffAccounts() {
+      try {
+        const raw = safeGet('prod_staff_accounts');
+        if (raw) {
+          const list = JSON.parse(raw);
+          if (Array.isArray(list) && list.length > 0) return list;
+        }
+      } catch(e) {}
+      safeSet('prod_staff_accounts', JSON.stringify(DEFAULT_STAFF_ACCOUNTS));
+      return DEFAULT_STAFF_ACCOUNTS;
+    }
+
+    function saveStaffAccounts(accounts) {
+      safeSet('prod_staff_accounts', JSON.stringify(accounts));
+    }
+
+    function loadUserSession() {
+      try {
+        const raw = safeSessionGet('prod_user_session');
+        if (raw) return JSON.parse(raw);
+      } catch(e) {}
+      return null;
+    }
+
+    function setUserSession(userObj) {
+      currentUserSession = userObj;
+      if (userObj) {
+        safeSessionSet('prod_user_session', JSON.stringify(userObj));
+      } else {
+        sessionStorage.removeItem('prod_user_session');
+      }
+      updateAuthUI();
+      renderJobs();
+    }
+
     function loadLocalJobs() {
       try {
         const raw = safeGet(getStorageKey());
@@ -764,15 +896,13 @@
           if (Array.isArray(parsed) && parsed.length > 0) return parsed;
         }
         
-        // Auto-recovery from legacy storage keys if present
+        // Auto-recovery fallback from legacy storage keys
         const legacyKeys = ['prod_data_PRINTO', 'prod_jobs_data', 'production_jobs'];
         for (const k of legacyKeys) {
           const legacy = safeGet(k);
           if (legacy) {
             const parsed = JSON.parse(legacy);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              return parsed;
-            }
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
           }
         }
       } catch (err) {}
@@ -783,119 +913,207 @@
       try { safeSet(getStorageKey(), JSON.stringify(jobs)); } catch(err) {}
     }
 
-    function updateRoleUI() {
-      const btn = document.getElementById('adminRoleBtn');
-      const icon = document.getElementById('adminRoleIcon');
-      const text = document.getElementById('adminRoleText');
+    /* Update Auth & Roles in UI */
+    function updateAuthUI() {
+      const btn = document.getElementById('authBtn');
+      const icon = document.getElementById('authIcon');
+      const text = document.getElementById('authText');
       const banner = document.getElementById('roleBanner');
       const bannerIcon = document.getElementById('roleBannerIcon');
       const bannerText = document.getElementById('roleBannerText');
       const bannerAction = document.getElementById('roleBannerAction');
+      const manageUsersBtn = document.getElementById('manageUsersBtn');
 
-      if (isAdmin) {
-        if (btn) btn.className = 'btn btn-admin-active';
-        if (icon) icon.innerText = '👑';
-        if (text) text.innerText = 'അഡ്മിൻ (ലോഗൗട്ട്)';
-        if (banner) banner.className = 'role-banner admin';
-        if (bannerIcon) bannerIcon.innerText = '👑';
-        if (bannerText) bannerText.innerText = 'അഡ്മിൻ മോഡ് ഓൺ: ഓർഡറുകൾ ചേർക്കാനും മാറ്റാനും പൂർണ്ണ അനുമതിയുണ്ട്.';
+      if (currentUserSession) {
+        const isMasterAdmin = currentUserSession.role === 'admin';
+        if (btn) btn.className = 'btn btn-user-active';
+        if (icon) icon.innerText = isMasterAdmin ? '👑' : '👤';
+        if (text) text.innerText = `${currentUserSession.name} (Logout)`;
+        
+        if (banner) banner.className = 'role-banner active-session';
+        if (bannerIcon) bannerIcon.innerText = isMasterAdmin ? '👑' : '✓';
+        if (bannerText) bannerText.innerText = `Active Session: ${currentUserSession.name} (${currentUserSession.role.toUpperCase()}) - Authorized to update production.`;
         if (bannerAction) {
-          bannerAction.innerText = 'ലോഗൗട്ട് ചെയ്യുക';
+          bannerAction.innerText = 'Logout';
           bannerAction.style.color = '#f43f5e';
+        }
+
+        if (manageUsersBtn) {
+          manageUsersBtn.style.display = isMasterAdmin ? 'inline-flex' : 'none';
         }
       } else {
         if (btn) btn.className = 'btn btn-dark';
-        if (icon) icon.innerText = '🔒';
-        if (text) text.innerText = 'അഡ്മിൻ ലോഗിൻ';
+        if (icon) icon.innerText = '👤';
+        if (text) text.innerText = 'Staff Login';
+
         if (banner) banner.className = 'role-banner';
         if (bannerIcon) bannerIcon.innerText = '👁️';
-        if (bannerText) bannerText.innerText = 'സാധാരണ മോഡ്: മാറ്റങ്ങൾ കാണാൻ മാത്രം സാധിക്കും. എഡിറ്റ് ചെയ്യാൻ അഡ്മിൻ ലോഗിൻ ചെയ്യുക.';
+        if (bannerText) bannerText.innerText = 'View-Only Mode: Sign in with your staff account to add or update orders.';
         if (bannerAction) {
-          bannerAction.innerText = 'അഡ്മിൻ കോഡ് നൽകുക';
+          bannerAction.innerText = 'Staff Login';
           bannerAction.style.color = '#10b981';
+        }
+
+        if (manageUsersBtn) {
+          manageUsersBtn.style.display = 'none';
         }
       }
     }
 
-    window.toggleAdminLoginModal = function() {
-      if (isAdmin) {
-        isAdmin = false;
-        safeSessionSet('prod_is_admin', 'false');
-        updateRoleUI();
-        renderJobs();
-        showToast('അഡ്മിൻ മോഡ് ലോഗൗട്ട് ചെയ്തു (View-Only)', 'warning');
+    window.toggleAuthModal = function() {
+      if (currentUserSession) {
+        const oldName = currentUserSession.name;
+        setUserSession(null);
+        showToast(`Logged out from ${oldName} (Switched to View-Only)`, 'warning');
       } else {
-        document.getElementById('adminPinInput').value = '';
-        openModal('adminLoginModal');
+        document.getElementById('authUsernameInput').value = '';
+        document.getElementById('authPinInput').value = '';
+        openModal('authModal');
       }
     };
 
-    window.closeAdminLoginModal = function() {
-      closeModal('adminLoginModal');
+    window.closeAuthModal = function() {
+      closeModal('authModal');
     };
 
-    window.handleAdminLoginSubmit = function(e) {
+    window.handleAuthLoginSubmit = function(e) {
       e.preventDefault();
-      const pin = document.getElementById('adminPinInput').value.trim();
-      if (pin === STORED_ADMIN_PIN) {
-        isAdmin = true;
-        safeSessionSet('prod_is_admin', 'true');
-        closeAdminLoginModal();
-        updateRoleUI();
-        renderJobs();
-        showToast('അഡ്മിൻ ആക്സസ് അൺലോക്ക് ആയി! 🎉', 'success');
+      const enteredUsername = document.getElementById('authUsernameInput').value.trim().toLowerCase();
+      const enteredPin = document.getElementById('authPinInput').value.trim();
+
+      const accounts = loadStaffAccounts();
+      const matchedUser = accounts.find(acc => acc.username.toLowerCase() === enteredUsername && acc.pin === enteredPin);
+
+      if (matchedUser) {
+        setUserSession({
+          username: matchedUser.username,
+          name: matchedUser.name,
+          role: matchedUser.role || 'staff'
+        });
+        closeAuthModal();
+        showToast(`Welcome back, ${matchedUser.name}! Session authenticated.`, 'success');
       } else {
-        showToast('തെറ്റായ അഡ്മിൻ കോഡ്! വീണ്ടും ശ്രമിക്കുക.', 'warning');
+        showToast('Invalid Username or PIN! Please try again.', 'warning');
       }
     };
 
-    function requireAdminPermission() {
-      if (!isAdmin) {
-        showToast('മാറ്റങ്ങൾ വരുത്താൻ അഡ്മിൻ കോഡ് നൽകുക!', 'warning');
-        document.getElementById('adminPinInput').value = '';
-        openModal('adminLoginModal');
+    function requireUserAuth() {
+      if (!currentUserSession) {
+        showToast('Please sign in to update production stages!', 'warning');
+        document.getElementById('authUsernameInput').value = '';
+        document.getElementById('authPinInput').value = '';
+        openModal('authModal');
         return false;
       }
       return true;
     }
 
     window.handleNewJobClick = function() {
-      if (requireAdminPermission()) {
+      if (requireUserAuth()) {
         openNewJobModal();
       }
     };
 
+    /* Account Management Modal Functions */
+    window.openManageUsersModal = function() {
+      if (!currentUserSession || currentUserSession.role !== 'admin') {
+        showToast('Admin privilege required!', 'warning');
+        return;
+      }
+      renderAccountsList();
+      openModal('manageUsersModal');
+    };
+
+    window.closeManageUsersModal = function() {
+      closeModal('manageUsersModal');
+    };
+
+    function renderAccountsList() {
+      const accounts = loadStaffAccounts();
+      const container = document.getElementById('accountsListContainer');
+      if (!container) return;
+
+      container.innerHTML = accounts.map(acc => `
+        <div style="display: flex; align-items: center; justify-content: space-between; background: #0f172a; padding: 8px 10px; border-radius: 8px; border: 1px solid #1e293b;">
+          <div>
+            <div style="font-size: 12px; font-weight: 700; color: #ffffff;">${escapeHtml(acc.name)}</div>
+            <div style="font-size: 10px; color: #94a3b8; font-family: monospace;">@${escapeHtml(acc.username)} • ${acc.role.toUpperCase()}</div>
+          </div>
+          ${acc.username !== 'asif' ? `
+            <button onclick="deleteStaffAccount('${acc.username}')" style="background: none; border: none; color: #f43f5e; font-size: 11px; cursor: pointer;">Remove</button>
+          ` : `<span style="font-size: 10px; color: #10b981; font-weight: bold;">Super Admin</span>`}
+        </div>
+      `).join('');
+    }
+
+    window.handleAddNewUser = function(e) {
+      e.preventDefault();
+      const name = document.getElementById('newStaffName').value.trim();
+      const username = document.getElementById('newStaffUsername').value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '');
+      const pin = document.getElementById('newStaffPin').value.trim();
+      const role = document.getElementById('newStaffRole').value;
+
+      if (!name || !username || !pin) return;
+
+      const accounts = loadStaffAccounts();
+      if (accounts.some(a => a.username === username)) {
+        showToast('Username already taken! Choose another ID.', 'warning');
+        return;
+      }
+
+      accounts.push({ name, username, pin, role });
+      saveStaffAccounts(accounts);
+      renderAccountsList();
+
+      document.getElementById('newStaffName').value = '';
+      document.getElementById('newStaffUsername').value = '';
+      document.getElementById('newStaffPin').value = '';
+      showToast(`Account @${username} created successfully!`, 'success');
+    };
+
+    window.deleteStaffAccount = function(username) {
+      let accounts = loadStaffAccounts();
+      accounts = accounts.filter(a => a.username !== username);
+      saveStaffAccounts(accounts);
+      renderAccountsList();
+      showToast(`Account @${username} removed.`, 'info');
+    };
+
+    /* Modal Utility Functions */
     function openModal(id) {
       const el = document.getElementById(id);
-      if (el) {
-        el.classList.add('active');
-      }
+      if (el) el.classList.add('active');
     }
 
     function closeModal(id) {
       const el = document.getElementById(id);
-      if (el) {
-        el.classList.remove('active');
-      }
+      if (el) el.classList.remove('active');
     }
 
+    /* Realtime MQTT Sync Engine */
     function initRealtimeSync() {
       updateChannelLabelDisplay();
 
       if (!factorySyncChannel) {
         openModal('factoryLockModal');
-        updateSyncBadge(false);
+        updateSyncBadge('connecting', 'Enter Security Code');
         return;
       } else {
         closeModal('factoryLockModal');
       }
 
       if (typeof mqtt === 'undefined') {
-        updateSyncBadge(false);
+        updateSyncBadge('offline', 'Offline (Script not loaded)');
         return;
       }
 
-      const brokerUrl = 'wss://broker.emqx.io:8084/mqtt';
+      connectToActiveBroker();
+    }
+
+    function connectToActiveBroker() {
+      updateSyncBadge('connecting', 'Connecting to Cloud...');
+
+      const brokerUrl = BROKER_SERVERS[currentBrokerIndex];
       const clientId = 'printo_' + currentUserId + '_' + Math.random().toString(16).substring(2, 6);
 
       try {
@@ -906,14 +1124,16 @@
         mqttClient = mqtt.connect(brokerUrl, {
           clientId: clientId,
           clean: true,
-          connectTimeout: 7000,
-          reconnectPeriod: 6000
+          connectTimeout: 5000,
+          reconnectPeriod: 4000,
+          keepalive: 30
         });
 
-        const topic = `factory/prod_v11/${factorySyncChannel}`;
+        const topic = `factory/prod_v14/${factorySyncChannel}`;
 
         mqttClient.on('connect', () => {
-          updateSyncBadge(true);
+          isConnectedToCloud = true;
+          updateSyncBadge('connected', 'Cloud Connected');
           mqttClient.subscribe(topic, { qos: 1 });
           
           broadcastMessage({
@@ -934,18 +1154,42 @@
           } catch (e) {}
         });
 
-        mqttClient.on('error', () => updateSyncBadge(false));
-        mqttClient.on('close', () => updateSyncBadge(false));
+        mqttClient.on('error', (err) => {
+          handleBrokerFailover();
+        });
+
+        mqttClient.on('close', () => {
+          if (isConnectedToCloud) {
+            isConnectedToCloud = false;
+            updateSyncBadge('offline', 'Reconnecting...');
+          }
+        });
 
       } catch (err) {
-        updateSyncBadge(false);
+        handleBrokerFailover();
       }
     }
+
+    function handleBrokerFailover() {
+      currentBrokerIndex = (currentBrokerIndex + 1) % BROKER_SERVERS.length;
+      updateSyncBadge('connecting', 'Switching Server...');
+      setTimeout(() => {
+        if (!isConnectedToCloud) {
+          connectToActiveBroker();
+        }
+      }, 1500);
+    }
+
+    window.manualForceReconnect = function() {
+      currentBrokerIndex = (currentBrokerIndex + 1) % BROKER_SERVERS.length;
+      showToast('Reconnecting cloud broker...', 'info');
+      connectToActiveBroker();
+    };
 
     function broadcastMessage(payloadObj, retain = false) {
       if (mqttClient && mqttClient.connected) {
         try {
-          const topic = `factory/prod_v11/${factorySyncChannel}`;
+          const topic = `factory/prod_v14/${factorySyncChannel}`;
           mqttClient.publish(topic, JSON.stringify(payloadObj), { qos: 1, retain: retain });
         } catch (e) {}
       }
@@ -986,7 +1230,7 @@
           }
           saveLocalJobs();
           renderJobs();
-          showToast(`തത്സമയ മാറ്റം: ${data.job.title}`, 'info');
+          showToast(`Live update: ${data.job.title} (${data.job.updatedByName || 'Staff'})`, 'info');
         }
       } else if (data.type === 'JOB_DELETE') {
         if (data.jobId) {
@@ -994,7 +1238,7 @@
           saveLocalJobs();
           renderJobs();
           broadcastRetainedSnapshot();
-          showToast('ഒരു ഓർഡർ നീക്കം ചെയ്യപ്പെട്ടു', 'warning');
+          showToast('An order was deleted from cloud.', 'warning');
         }
       }
     }
@@ -1026,6 +1270,7 @@
       return stages.every(s => job.stages && job.stages[s.id] === true);
     }
 
+    /* Render Jobs Cards */
     function renderJobs() {
       const container = document.getElementById('jobsGrid');
       const emptyState = document.getElementById('emptyState');
@@ -1043,8 +1288,9 @@
           const matchTitle = (job.title || '').toLowerCase().includes(searchVal);
           const matchClient = (job.client || '').toLowerCase().includes(searchVal);
           const matchNotes = (job.notes || '').toLowerCase().includes(searchVal);
+          const matchUser = (job.updatedByName || job.createdByName || '').toLowerCase().includes(searchVal);
           const matchId = (job.id || '').toLowerCase().includes(searchVal);
-          if (!matchTitle && !matchClient && !matchNotes && !matchId) return false;
+          if (!matchTitle && !matchClient && !matchNotes && !matchId && !matchUser) return false;
         }
         return true;
       });
@@ -1070,6 +1316,8 @@
 
         const percent = Math.round((completedCount / stagesList.length) * 100);
         const isLanyard = (job.jobType || 'lanyard') === 'lanyard';
+        const editorName = job.updatedByName || job.createdByName || 'Staff';
+        const hasSession = !!currentUserSession;
 
         return `
           <div class="job-card ${completed ? 'completed' : ''}">
@@ -1079,23 +1327,23 @@
                 <div style="flex: 1;">
                   <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                     <span class="badge-pill ${isLanyard ? 'badge-lanyard' : 'badge-pvc'}">
-                      ${isLanyard ? '🧵 ലന്യാർഡ്' : '💳 പിവിസി കാർഡ്'}
+                      ${isLanyard ? '🧵 Lanyard' : '💳 PVC Card'}
                     </span>
                     <span style="font-size: 10px; font-family: monospace; color: #64748b;">#${job.id.substring(job.id.length - 5)}</span>
                   </div>
                   <h3 style="font-size: 15px; font-weight: 800; color: #ffffff; margin-top: 4px; line-height: 1.3;">${escapeHtml(job.title)}</h3>
                   <div style="font-size: 11px; color: #94a3b8; display: flex; align-items: center; gap: 6px; margin-top: 3px; flex-wrap: wrap;">
-                    <span>${job.client ? '🏢 ' + escapeHtml(job.client) : 'ക്ലയന്റ് വിവരമില്ല'}</span>
+                    <span>${job.client ? '🏢 ' + escapeHtml(job.client) : 'No Client Info'}</span>
                     ${job.quantity ? `<span>•</span><span>📦 ${job.quantity} pcs</span>` : ''}
                   </div>
                 </div>
 
-                ${isAdmin ? `
-                  <button onclick="promptDeleteJob('${job.id}')" title="കളയുക" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 4px; color: #64748b; transition: color 0.15s;" onmouseover="this.style.color='#f43f5e'" onmouseout="this.style.color='#64748b'">
+                ${hasSession ? `
+                  <button onclick="promptDeleteJob('${job.id}')" title="Delete Order" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 4px; color: #64748b; transition: color 0.15s;" onmouseover="this.style.color='#f43f5e'" onmouseout="this.style.color='#64748b'">
                     🗑️
                   </button>
                 ` : `
-                  <span style="font-size: 12px; color: #475569;" title="കാണാൻ മാത്രം (View-Only)">🔒</span>
+                  <span style="font-size: 12px; color: #475569;" title="View-Only Mode">🔒</span>
                 `}
               </div>
 
@@ -1103,7 +1351,7 @@
                 <div style="margin-top: 10px; padding: 8px 10px; border-radius: 10px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); color: #fde68a; font-size: 11px; display: flex; gap: 6px;">
                   <span style="color: #fbbf24; font-weight: bold;">📌</span>
                   <div style="line-height: 1.4; word-break: break-word;">
-                    <span style="font-weight: bold; color: #fcd34d;">കുറിപ്പ്:</span> ${escapeHtml(job.notes)}
+                    <span style="font-weight: bold; color: #fcd34d;">Notes:</span> ${escapeHtml(job.notes)}
                   </div>
                 </div>
               ` : ''}
@@ -1117,15 +1365,15 @@
                       PRODUCT STATUS
                     </div>
                     <div style="font-size: 11px; font-weight: 800; color: ${completed ? '#a7f3d0' : '#fecdd3'};">
-                      ${completed ? '✓ പൂർത്തിയായി (COMPLETED)' : '⏳ പെൻഡിംഗ് (PENDING)'}
+                      ${completed ? '✓ COMPLETED' : '⏳ PENDING'}
                     </div>
                   </div>
                 </div>
 
                 <div>
                   ${job.proofImage ? `
-                    <div onclick="openLightbox('${job.proofImage}', '${escapeHtml(job.title)}')" style="cursor: pointer;" title="പ്രൂഫ് ചിത്രം വലുതായി കാണുക">
-                      <img src="${job.proofImage}" alt="Proof" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover; border: 1px solid #334155;">
+                    <div onclick="openLightbox('${job.proofImage}', '${escapeHtml(job.title)}')" style="cursor: pointer;" title="Click to view full artwork">
+                      <img src="${job.proofImage}" alt="Artwork Proof" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover; border: 1px solid #334155;">
                     </div>
                   ` : ''}
                 </div>
@@ -1134,7 +1382,7 @@
               <!-- Progress Bar -->
               <div style="margin-top: 12px;">
                 <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px; color: #94a3b8;">
-                  <span>ഘട്ടങ്ങൾ (${completedCount}/${stagesList.length})</span>
+                  <span>Stages (${completedCount}/${stagesList.length})</span>
                   <span style="font-weight: bold; font-family: monospace; color: ${completed ? '#34d399' : '#cbd5e1'};">${percent}%</span>
                 </div>
                 <div style="width: 100%; background: #0b0f19; border-radius: 99px; height: 6px; overflow: hidden; border: 1px solid #1e293b;">
@@ -1151,7 +1399,7 @@
                       type="button"
                       onclick="handleStageToggleClick('${job.id}', '${st.id}')"
                       class="stage-btn ${isDone ? 'done' : ''}"
-                      title="${isAdmin ? 'സ്റ്റാറ്റസ് മാറ്റാൻ ക്ലിക്ക് ചെയ്യുക' : 'അഡ്മിൻ കോഡ് വേണം'}"
+                      title="${hasSession ? 'Click to toggle stage status' : 'Login required'}"
                     >
                       <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 4px;">
                         <span>${st.icon}</span>
@@ -1165,9 +1413,16 @@
 
             </div>
 
-            <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(30, 41, 59, 0.7); display: flex; justify-content: space-between; font-size: 10px; color: #64748b;">
-              <span>${job.deliveryDate ? '📅 ' + job.deliveryDate : 'തീയതിയില്ല'}</span>
-              <span>അപ്‌‌ഡേറ്റ്: ${timeAgo(job.updatedAt)}</span>
+            <!-- Card Footer: Audit Trail -->
+            <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(30, 41, 59, 0.7); display: flex; flex-direction: column; gap: 4px; font-size: 10px; color: #64748b;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>${job.deliveryDate ? '📅 Due: ' + job.deliveryDate : 'No due date'}</span>
+                <span>🕒 ${timeAgo(job.updatedAt)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #94a3b8;">
+                <span>Created by: <strong style="color: #cbd5e1;">${escapeHtml(job.createdByName || 'Admin')}</strong></span>
+                <span>Updated by: <strong style="color: #10b981;">👤 ${escapeHtml(editorName)}</strong></span>
+              </div>
             </div>
 
           </div>
@@ -1175,8 +1430,9 @@
       }).join('');
     }
 
+    /* Toggle Stage Click with Verified User Session */
     window.handleStageToggleClick = function(jobId, stageId) {
-      if (!requireAdminPermission()) return;
+      if (!requireUserAuth()) return;
 
       const job = jobs.find(j => j.id === jobId);
       if (!job) return;
@@ -1185,6 +1441,7 @@
       job.stages[stageId] = !job.stages[stageId];
       job.updatedAt = Date.now();
       job.updatedBy = currentUserId;
+      job.updatedByName = currentUserSession.name;
 
       saveLocalJobs();
       renderJobs();
@@ -1198,12 +1455,13 @@
       broadcastRetainedSnapshot();
 
       const done = job.stages[stageId];
-      showToast(`${job.title}: ${stageId} ${done ? 'പൂർത്തിയായി' : 'മാറ്റി'}`, done ? 'success' : 'default');
+      showToast(`${job.title}: ${stageId} ${done ? 'Completed' : 'Reset'} (${currentUserSession.name})`, done ? 'success' : 'default');
     };
 
+    /* Create New Job Form Handler */
     window.handleCreateJob = function(e) {
       e.preventDefault();
-      if (!requireAdminPermission()) return;
+      if (!requireUserAuth()) return;
 
       const title = document.getElementById('jobTitle').value.trim();
       if (!title) return;
@@ -1213,6 +1471,7 @@
       const quantity = document.getElementById('jobQuantity').value.trim();
       const deliveryDate = document.getElementById('jobDelivery').value;
       const notes = document.getElementById('jobNotes').value.trim();
+      const creatorName = currentUserSession.name;
 
       const newJob = {
         id: 'job_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
@@ -1226,7 +1485,10 @@
         stages: {},
         createdAt: Date.now(),
         updatedAt: Date.now(),
-        updatedBy: currentUserId
+        createdBy: currentUserId,
+        createdByName: creatorName,
+        updatedBy: currentUserId,
+        updatedByName: creatorName
       };
 
       jobs.unshift(newJob);
@@ -1241,16 +1503,17 @@
       });
 
       broadcastRetainedSnapshot();
-      showToast(`പുതിയ ജോബ് "${title}" ചേർത്തു!`, 'success');
+      showToast(`New job "${title}" created by ${creatorName}!`, 'success');
     };
 
+    /* Image Proof Upload & Compression */
     window.handleImageSelection = function(e) {
       const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(evt) {
-        compressBase64Image(evt.target.result, 320, 0.6, (compressedData) => {
+        compressBase64Image(evt.target.result, 360, 0.6, (compressedData) => {
           tempNewJobImage = compressedData;
           document.getElementById('imagePreview').src = compressedData;
           document.getElementById('imageUploadPlaceholder').style.display = 'none';
@@ -1288,6 +1551,7 @@
       img.src = src;
     }
 
+    /* Channel Code Utilities */
     window.toggleSecretVisibility = function() {
       isCodeVisible = !isCodeVisible;
       updateChannelLabelDisplay();
@@ -1320,7 +1584,7 @@
       const validCode = (safeGet('prod_factory_password', DEFAULT_FACTORY_PASS)).toUpperCase();
 
       if (enteredCode !== validCode) {
-        showToast('തെറ്റായ കോഡ്! ശരിയായ ഫാക്ടറി കോഡ് നൽകുക.', 'warning');
+        showToast('Invalid Security Code! Please enter valid code.', 'warning');
         return;
       }
 
@@ -1331,16 +1595,16 @@
       jobs = loadLocalJobs();
       renderJobs();
       initRealtimeSync();
-      showToast('ഫാക്ടറി കോഡ് കണക്റ്റ് ചെയ്തു!', 'success');
+      showToast('Factory Channel Connected!', 'success');
     };
 
     window.handleChannelSettingsClick = function() {
-      if (!requireAdminPermission()) return;
+      if (!requireUserAuth()) return;
       openChannelModal();
     };
 
     window.openChannelModal = function() {
-      if (!requireAdminPermission()) return;
+      if (!requireUserAuth()) return;
       document.getElementById('inputCustomChannel').value = factorySyncChannel || DEFAULT_FACTORY_PASS;
       openModal('channelSettingsModal');
     };
@@ -1350,7 +1614,7 @@
     };
 
     window.saveChannelModal = function() {
-      if (!requireAdminPermission()) return;
+      if (!requireUserAuth()) return;
       const val = document.getElementById('inputCustomChannel').value.trim();
       if (val) {
         const cleanCode = val.toUpperCase().replace(/[^A-Z0-9_-]/g, '');
@@ -1361,12 +1625,12 @@
         jobs = loadLocalJobs();
         renderJobs();
         initRealtimeSync();
-        showToast('ഫാക്ടറി കോഡ് അപ്‌‌‌‌ഡേറ്റ് ചെയ്തു!', 'info');
+        showToast('Channel code updated!', 'info');
       }
     };
 
     window.logoutFactoryCode = function() {
-      if (!requireAdminPermission()) return;
+      if (!requireUserAuth()) return;
       try { localStorage.removeItem('prod_factory_channel'); } catch(e){}
       factorySyncChannel = '';
       closeChannelModal();
@@ -1375,13 +1639,14 @@
       if (mqttClient) {
         try { mqttClient.end(true); } catch(e){}
       }
-      updateSyncBadge(false);
+      updateSyncBadge('offline', 'App Locked');
       updateChannelLabelDisplay();
-      showToast('ആപ്പ് ലോക്ക് ചെയ്തു', 'warning');
+      showToast('App Locked', 'warning');
     };
 
+    /* Order Deletion */
     window.promptDeleteJob = function(jobId) {
-      if (!requireAdminPermission()) return;
+      if (!requireUserAuth()) return;
       pendingDeleteId = jobId;
       openModal('deleteConfirmModal');
     };
@@ -1392,7 +1657,7 @@
     };
 
     window.executeDeleteJob = function() {
-      if (!requireAdminPermission() || !pendingDeleteId) return;
+      if (!requireUserAuth() || !pendingDeleteId) return;
       const jId = pendingDeleteId;
       jobs = jobs.filter(j => j.id !== jId);
       saveLocalJobs();
@@ -1406,9 +1671,10 @@
       });
 
       broadcastRetainedSnapshot();
-      showToast('ഓർഡർ നീക്കം ചെയ്തു', 'warning');
+      showToast(`Order deleted by ${currentUserSession.name}`, 'warning');
     };
 
+    /* Lightbox Artwork Viewer */
     window.openLightbox = function(imgSrc, caption) {
       document.getElementById('lightboxImage').src = imgSrc;
       document.getElementById('lightboxCaption').innerText = caption || '';
@@ -1429,6 +1695,7 @@
       closeModal('newJobModal');
     };
 
+    /* Filter Controls */
     window.setTypeFilter = function(type) {
       currentTypeFilter = type;
       ['all', 'lanyard', 'pvc'].forEach(t => {
@@ -1449,66 +1716,170 @@
       renderJobs();
     };
 
-    function updateSyncBadge(isConnected) {
+    /* Sync Connection Badge UI */
+    function updateSyncBadge(status, customText) {
       const badge = document.getElementById('syncBadge');
       const text = document.getElementById('syncBadgeText');
       const dot = document.getElementById('syncDot');
       if (!badge || !text) return;
-      if (isConnected) {
+
+      if (status === 'connected') {
         badge.style.background = 'rgba(16, 185, 129, 0.15)';
         badge.style.color = '#34d399';
         badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-        text.innerText = 'തത്സമയം ബന്ധിപ്പിച്ചു';
+        text.innerText = customText || 'Cloud Connected';
         if (dot) dot.style.background = '#10b981';
+      } else if (status === 'connecting') {
+        badge.style.background = 'rgba(245, 158, 11, 0.15)';
+        badge.style.color = '#fbbf24';
+        badge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
+        text.innerText = customText || 'Connecting...';
+        if (dot) dot.style.background = '#f59e0b';
       } else {
         badge.style.background = 'rgba(244, 63, 94, 0.15)';
-        badge.style.color = '#fb7185';
+        badge.style.color = '#fbbf24';
         badge.style.borderColor = 'rgba(244, 63, 94, 0.3)';
-        text.innerText = 'ഓഫ്‌ലൈൻ മോഡ്';
+        text.innerText = customText || 'Offline Mode';
         if (dot) dot.style.background = '#f43f5e';
       }
     }
 
+    /* Complete Excel / CSV Export with Audit Trail */
     window.exportToExcel = function() {
-      if (jobs.length === 0) {
-        showToast('ബാക്കപ്പ് ചെയ്യാൻ ജോബുകൾ ലഭ്യമല്ല', 'warning');
-        return;
-      }
+      try {
+        const list = Array.isArray(jobs) ? jobs : [];
 
-      const headers = ['Job ID', 'Type', 'Title', 'Client', 'Quantity', 'Delivery Date', 'Product Status', 'Stages Completed', 'Notes', 'Created Time'];
-      
-      const rows = jobs.map(j => {
-        const completed = isJobCompleted(j);
-        const stagesList = getJobStages(j.jobType);
-        const doneList = stagesList.filter(s => j.stages && j.stages[s.id]).map(s => s.name).join(' | ');
-
-        return [
-          `"${j.id}"`,
-          `"${j.jobType === 'pvc' ? 'PVC Card' : 'Lanyard'}"`,
-          `"${(j.title || '').replace(/"/g, '""')}"`,
-          `"${(j.client || '').replace(/"/g, '""')}"`,
-          `"${j.quantity || ''}"`,
-          `"${j.deliveryDate || ''}"`,
-          `"${completed ? 'COMPLETED' : 'PENDING'}"`,
-          `"${doneList}"`,
-          `"${(j.notes || '').replace(/"/g, '""')}"`,
-          `"${new Date(j.createdAt).toLocaleString('en-IN')}"`
+        const headers = [
+          'Job ID',
+          'Product Type',
+          'Job Title',
+          'Client Name',
+          'Quantity',
+          'Delivery Date',
+          'Product Status',
+          'Completed Stages Count',
+          'Total Stages',
+          'Completed Stages Details',
+          'Special Notes',
+          'Created By (Staff Name)',
+          'Created Date & Time',
+          'Last Updated By (Staff Name)',
+          'Last Updated Date & Time'
         ];
-      });
 
-      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `Production_Tracker_${new Date().toISOString().slice(0, 10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+        const sanitize = (val) => {
+          if (val === null || val === undefined) return '""';
+          return `"${String(val).replace(/"/g, '""').replace(/\r?\n/g, ' ')}"`;
+        };
 
-      showToast('എക്സൽ ബാക്കപ്പ് ഫയൽ ഡൗൺലോഡ് ആയി!', 'success');
+        const rows = list.map(j => {
+          const completed = isJobCompleted(j);
+          const stagesList = getJobStages(j.jobType || 'lanyard');
+          let doneCount = 0;
+          const doneNames = [];
+          
+          stagesList.forEach(st => {
+            if (j.stages && j.stages[st.id]) {
+              doneCount++;
+              doneNames.push(st.name);
+            }
+          });
+
+          const createdDateFormatted = j.createdAt ? new Date(j.createdAt).toLocaleString('en-IN') : '';
+          const updatedDateFormatted = j.updatedAt ? new Date(j.updatedAt).toLocaleString('en-IN') : createdDateFormatted;
+
+          return [
+            sanitize(j.id),
+            sanitize(j.jobType === 'pvc' ? 'PVC Card' : 'Lanyard'),
+            sanitize(j.title),
+            sanitize(j.client),
+            sanitize(j.quantity),
+            sanitize(j.deliveryDate),
+            sanitize(completed ? 'COMPLETED' : 'PENDING'),
+            sanitize(doneCount),
+            sanitize(stagesList.length),
+            sanitize(doneNames.join(' | ')),
+            sanitize(j.notes),
+            sanitize(j.createdByName || 'Admin'),
+            sanitize(createdDateFormatted),
+            sanitize(j.updatedByName || j.createdByName || 'Admin'),
+            sanitize(updatedDateFormatted)
+          ].join(',');
+        });
+
+        if (rows.length === 0) {
+          rows.push([
+            '"SAMPLE_01"',
+            '"Lanyard"',
+            '"Sample Order"',
+            '"Sample Client"',
+            '"500"',
+            '""',
+            '"PENDING"',
+            '"0"',
+            '"8"',
+            '""',
+            '"No orders yet in app"',
+            '"Manager"',
+            '""',
+            '"Supervisor"',
+            '""'
+          ].join(','));
+        }
+
+        const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+        const fileName = `Production_Tracker_${new Date().toISOString().slice(0, 10)}.csv`;
+
+        let downloaded = false;
+
+        // Method 1: Blob Download
+        try {
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          if (window.navigator && window.navigator.msSaveOrOpenBlob) {
+            window.navigator.msSaveOrOpenBlob(blob, fileName);
+            downloaded = true;
+          } else {
+            const blobUrl = window.URL.createObjectURL(blob);
+            const downloadLink = document.createElement('a');
+            downloadLink.style.display = 'none';
+            downloadLink.href = blobUrl;
+            downloadLink.download = fileName;
+            downloadLink.setAttribute('download', fileName);
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            setTimeout(() => {
+              try {
+                document.body.removeChild(downloadLink);
+                window.URL.revokeObjectURL(blobUrl);
+              } catch(e){}
+            }, 1000);
+            downloaded = true;
+          }
+        } catch (blobErr) {
+          downloaded = false;
+        }
+
+        // Method 2: Mobile Fallback via Direct URI
+        if (!downloaded) {
+          const encodedUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+          const fallbackLink = document.createElement('a');
+          fallbackLink.href = encodedUri;
+          fallbackLink.download = fileName;
+          fallbackLink.target = '_blank';
+          document.body.appendChild(fallbackLink);
+          fallbackLink.click();
+          setTimeout(() => {
+            try { document.body.removeChild(fallbackLink); } catch(e){}
+          }, 800);
+        }
+
+        showToast(list.length > 0 ? 'Excel backup exported successfully!' : 'Sample Excel report generated!', 'success');
+      } catch (err) {
+        showToast('Export error: ' + err.message, 'warning');
+      }
     };
 
+    /* Toast Notification Utility */
     let toastTimer = null;
     function showToast(message, type = 'default') {
       const toast = document.getElementById('toast');
@@ -1533,14 +1904,14 @@
     }
 
     function timeAgo(timestamp) {
-      if (!timestamp) return 'ഇപ്പോൾ';
+      if (!timestamp) return 'Just now';
       const sec = Math.floor((Date.now() - timestamp) / 1000);
-      if (sec < 60) return 'ഇപ്പോൾ';
+      if (sec < 60) return 'Just now';
       const min = Math.floor(sec / 60);
-      if (min < 60) return `${min} മിനിറ്റ് മുൻപ്`;
+      if (min < 60) return `${min}m ago`;
       const hrs = Math.floor(min / 60);
-      if (hrs < 24) return `${hrs} മണിക്കൂർ മുൻപ്`;
-      return `${Math.floor(hrs / 24)} ദിവസം മുൻപ്`;
+      if (hrs < 24) return `${hrs}h ago`;
+      return `${Math.floor(hrs / 24)}d ago`;
     }
 
     function escapeHtml(str) {
@@ -1553,20 +1924,34 @@
         .replace(/'/g, '&#039;');
     }
 
+    /* Event Listeners */
+    window.addEventListener('online', () => {
+      showToast('Internet restored. Connecting to cloud...', 'info');
+      connectToActiveBroker();
+    });
+
+    window.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        if (!mqttClient || !mqttClient.connected) {
+          connectToActiveBroker();
+        }
+      }
+    });
+
     window.addEventListener('DOMContentLoaded', () => {
-      // Ensure all modal overlays are hidden initially
       document.querySelectorAll('.app-modal').forEach(m => {
         m.classList.remove('active');
       });
 
-      if (!factorySyncChannel) {
-        openModal('factoryLockModal');
-      } else {
+      if (factorySyncChannel) {
         jobs = loadLocalJobs();
         renderJobs();
         initRealtimeSync();
+      } else {
+        openModal('factoryLockModal');
+        updateSyncBadge('connecting', 'Enter Security Code');
       }
-      updateRoleUI();
+      updateAuthUI();
     });
   </script>
 </body>
