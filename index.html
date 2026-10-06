@@ -4,13 +4,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>PrintoTrack Production & Dispatch System</title>
+  <meta name="theme-color" content="#030712">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>PrintoCards Production & Dispatch Tracker</title>
   
-  <!-- MQTT for Multi-Device Realtime Cloud Synchronization -->
+  <!-- High-Speed MQTT WebSocket Realtime Sync Engine -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
 
   <style>
-    /* PURE ZERO-DEPENDENCY NATIVE CSS - ULTRA FAST & LIGHTWEIGHT */
+    /* PURE NATIVE CSS - ZERO EXTERNAL CSS DEPENDENCY */
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
@@ -28,7 +32,6 @@
       overflow-x: hidden;
     }
 
-    /* Modals System */
     .app-modal {
       display: none !important;
       position: fixed;
@@ -63,13 +66,12 @@
       to { transform: scale(1); opacity: 1; }
     }
 
-    /* Status Indicator Lights */
     .light-green {
       width: 14px;
       height: 14px;
       border-radius: 50%;
       background: radial-gradient(circle, #10b981 0%, #047857 100%);
-      box-shadow: 0 0 12px #10b981, 0 0 20px rgba(16, 185, 129, 0.6);
+      box-shadow: 0 0 12px #10b981;
       animation: pulse-green 1.8s infinite;
       flex-shrink: 0;
     }
@@ -84,7 +86,7 @@
       height: 14px;
       border-radius: 50%;
       background: radial-gradient(circle, #f43f5e 0%, #be123c 100%);
-      box-shadow: 0 0 12px #f43f5e, 0 0 20px rgba(244, 63, 94, 0.6);
+      box-shadow: 0 0 12px #f43f5e;
       animation: pulse-red 1.8s infinite;
       flex-shrink: 0;
     }
@@ -94,7 +96,6 @@
       50% { transform: scale(1.15); box-shadow: 0 0 20px #fb7185; }
     }
 
-    /* Top Navbars */
     .header-bar {
       position: sticky;
       top: 0;
@@ -157,7 +158,6 @@
       gap: 10px;
     }
 
-    /* Buttons */
     .btn {
       padding: 8px 14px;
       border-radius: 10px;
@@ -195,10 +195,8 @@
       background: rgba(16, 185, 129, 0.16);
       color: #34d399 !important;
       border: 1px solid rgba(16, 185, 129, 0.5);
-      box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
     }
 
-    /* Filter Controls */
     .filter-group {
       display: flex;
       background: #0b0f19;
@@ -249,7 +247,6 @@
       border-color: #10b981;
     }
 
-    /* Main Container */
     .main-wrap {
       max-width: 1200px;
       width: 100%;
@@ -278,7 +275,6 @@
       color: #a7f3d0;
     }
 
-    /* Production Cards */
     .jobs-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
@@ -403,7 +399,6 @@
       border-color: #10b981;
     }
 
-    /* Toast Notification */
     #toast {
       display: none;
       position: fixed;
@@ -435,14 +430,13 @@
 </head>
 <body>
 
-  <!-- Top Navigation Header -->
   <header class="header-bar">
     <div class="header-content">
       <div class="brand-wrap">
-        <div class="brand-icon">⚙️️</div>
+        <div class="brand-icon">💳</div>
         <div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <h1 class="brand-title">PRINTO<span>TRACK</span></h1>
+            <h1 class="brand-title">PRINTO<span>CARDS</span></h1>
             <span id="syncBadge" onclick="manualForceReconnect()" style="cursor: pointer; font-size: 11px; padding: 3px 8px; border-radius: 999px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Click to reconnect cloud sync">
               <span id="syncDot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#f59e0b;"></span>
               <span id="syncBadgeText">Connecting...</span>
@@ -460,25 +454,21 @@
       </div>
 
       <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-        <!-- Auth / Login Button -->
         <button id="authBtn" onclick="toggleAuthModal()" class="btn btn-dark">
           <span id="authIcon">👤</span>
           <span id="authText">Staff Login</span>
         </button>
 
-        <!-- Manage Users (Admin Only) -->
         <button id="manageUsersBtn" onclick="openManageUsersModal()" class="btn btn-dark" style="display: none;" title="Manage Staff Accounts">
           <span>👥</span>
           <span>Accounts</span>
         </button>
 
-        <!-- Excel Export Button -->
         <button type="button" onclick="exportToExcel()" class="btn btn-dark" title="Export production data to Excel/CSV">
           <span>📊</span>
           <span>Excel</span>
         </button>
 
-        <!-- Create New Job Button -->
         <button onclick="handleNewJobClick()" class="btn btn-emerald">
           <span style="font-size: 14px; font-weight: 900;">+</span>
           <span>New Job</span>
@@ -486,7 +476,6 @@
       </div>
     </div>
 
-    <!-- Filters & Search Bar -->
     <div class="sub-bar">
       <div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: center;">
         <div class="filter-group">
@@ -501,7 +490,6 @@
           <button id="statusBtn-completed" onclick="setStatusFilter('completed')" class="filter-btn">🟢 Delivered</button>
         </div>
 
-        <!-- Date Filter Group -->
         <div class="filter-group" style="align-items: center;">
           <span style="font-size: 11px; color: #94a3b8; padding: 0 4px;">📅</span>
           <button id="dateBtn-all" onclick="setDateFilter('all')" class="filter-btn active">All Days</button>
@@ -516,7 +504,6 @@
           >
         </div>
 
-        <!-- Date Mode Selector -->
         <select id="dateFilterMode" onchange="renderJobs()" style="background: #0b0f19; border: 1px solid #1e293b; color: #94a3b8; font-size: 11px; padding: 5px 8px; border-radius: 8px; outline: none; cursor: pointer;">
           <option value="activity">Filter by: Work Activity Date</option>
           <option value="created">Filter by: Order Created Date</option>
@@ -534,10 +521,7 @@
     </div>
   </header>
 
-  <!-- Main Content Wrap -->
   <main class="main-wrap">
-    
-    <!-- User Session Banner -->
     <div id="roleBanner" class="role-banner">
       <div style="display: flex; align-items: center; gap: 8px;">
         <span id="roleBannerIcon" style="font-size: 16px;">👁</span>
@@ -548,26 +532,21 @@
       </button>
     </div>
 
-    <!-- Jobs Grid Container -->
     <div id="jobsGrid" class="jobs-grid"></div>
 
-    <!-- Empty State -->
     <div id="emptyState" style="display:none; text-align:center; padding: 60px 16px;">
       <div style="width: 60px; height: 60px; border-radius: 16px; background:#0f172a; border:1px solid #1e293b; display:flex; align-items:center; justify-content:center; font-size:26px; margin:0 auto 12px auto;">
         📦
       </div>
       <h3 style="font-size: 15px; font-weight: 700; color: #cbd5e1;">No Production Jobs Found</h3>
-      <p style="font-size: 12px; color: #64748b; margin-top: 4px;">Click the green button above to add a new production order (Login required).</p>
+      <p style="font-size: 12px; color: #64748b; margin-top: 4px;">Click the green button above to add a new production order.</p>
       <button onclick="handleNewJobClick()" class="btn btn-emerald" style="margin-top: 14px;">
         + Create First Job
       </button>
     </div>
-
   </main>
 
-  <!-- ================= MODALS ================= -->
-
-  <!-- 1. Factory Security Code Modal -->
+  <!-- 1. Factory Lock Modal -->
   <div id="factoryLockModal" class="app-modal">
     <div class="modal-card" style="padding: 24px; text-align: center; max-width: 360px;">
       <div style="width: 50px; height: 50px; border-radius: 14px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981; display:flex; align-items:center; justify-content:center; font-size: 24px; margin: 0 auto 14px auto;">
@@ -575,7 +554,7 @@
       </div>
       <h3 style="font-size: 17px; font-weight: 800; color: #ffffff;">Factory Security Access</h3>
       <p style="font-size: 12px; color: #94a3b8; margin: 6px 0 16px 0; line-height: 1.4;">
-        Enter your company security code to connect to the production cloud.
+        Enter your company security code to connect to the cloud.
       </p>
 
       <form onsubmit="handleInitialCodeSubmit(event)" style="text-align: left;">
@@ -599,17 +578,16 @@
     </div>
   </div>
 
-  <!-- 2. Secure Staff Account Login Modal -->
+  <!-- 2. Staff Login Modal -->
   <div id="authModal" class="app-modal">
     <div class="modal-card" style="padding: 24px; text-align: center; max-width: 340px;">
       <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #10b981; display:flex; align-items:center; justify-content:center; font-size: 22px; margin: 0 auto 12px auto;">
         👤
       </div>
       <h3 style="font-size: 16px; font-weight: 800; color: #ffffff;">Staff Account Login</h3>
-      <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 14px 0;">Sign in with your verified username and security PIN to make production & dispatch updates.</p>
+      <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 14px 0;">Sign in to make production updates.</p>
 
       <form onsubmit="handleAuthLoginSubmit(event)" style="text-align: left;">
-        
         <div style="margin-bottom: 10px;">
           <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Username *</label>
           <input 
@@ -624,12 +602,12 @@
         </div>
 
         <div style="margin-bottom: 14px;">
-          <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Account PIN / Password *</label>
+          <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Account PIN *</label>
           <input 
             type="password" 
             id="authPinInput" 
             required 
-            placeholder="••••••" 
+            placeholder="••••" 
             class="form-input" 
             style="text-align: center; font-family: monospace; letter-spacing: 4px; font-size: 16px; color: #10b981;"
             autocomplete="current-password"
@@ -644,7 +622,7 @@
     </div>
   </div>
 
-  <!-- 3. Manage Accounts Modal (Admin Only) -->
+  <!-- 3. Manage Accounts Modal -->
   <div id="manageUsersModal" class="app-modal">
     <div class="modal-card" style="padding: 20px; max-width: 380px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 8px;">
@@ -652,15 +630,14 @@
         <button type="button" onclick="closeManageUsersModal()" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;">✕</button>
       </div>
 
-      <!-- Add New Staff Form -->
       <form onsubmit="handleAddNewUser(event)" style="background: #0b0f19; padding: 12px; border-radius: 12px; border: 1px solid #1e293b; margin-bottom: 14px;">
         <div style="font-size: 11px; font-weight: 700; color: #10b981; margin-bottom: 8px;">+ Register New Staff Account</div>
         <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 6px; margin-bottom: 6px;">
-          <input type="text" id="newStaffName" placeholder="Full Name (e.g. Rahul)" required class="form-input">
+          <input type="text" id="newStaffName" placeholder="Full Name" required class="form-input">
           <input type="text" id="newStaffUsername" placeholder="User ID" required class="form-input" style="text-transform: lowercase;">
         </div>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px;">
-          <input type="password" id="newStaffPin" placeholder="PIN (e.g. 1234)" required class="form-input">
+          <input type="password" id="newStaffPin" placeholder="PIN" required class="form-input">
           <select id="newStaffRole" class="form-input">
             <option value="staff">Staff / Operator</option>
             <option value="admin">Admin / Supervisor</option>
@@ -669,7 +646,6 @@
         <button type="submit" class="btn btn-emerald" style="width: 100%; justify-content: center; padding: 6px;">Add Account</button>
       </form>
 
-      <!-- Existing Accounts List -->
       <div style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px;">Registered Accounts:</div>
       <div id="accountsListContainer" style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px;"></div>
     </div>
@@ -684,7 +660,6 @@
       </div>
 
       <form id="newJobForm" onsubmit="handleCreateJob(event)" style="padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;">
-        
         <div>
           <label style="display:block; font-size:11px; font-weight:700; color:#cbd5e1; margin-bottom:6px;">Product Type *</label>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
@@ -692,7 +667,7 @@
               <input type="radio" name="jobType" value="lanyard" checked style="accent-color: #10b981;">
               <div>
                 <div style="font-size: 12px; font-weight: 700; color: #ffffff;">🧵 Lanyard</div>
-                <div style="font-size: 10px; color: #94a3b8;">10 Stages (Incl. Courier)</div>
+                <div style="font-size: 10px; color: #94a3b8;">10 Stages</div>
               </div>
             </label>
 
@@ -700,7 +675,7 @@
               <input type="radio" name="jobType" value="pvc" style="accent-color: #10b981;">
               <div>
                 <div style="font-size: 12px; font-weight: 700; color: #ffffff;">💳 PVC Card</div>
-                <div style="font-size: 10px; color: #94a3b8;">7 Stages (Incl. Courier)</div>
+                <div style="font-size: 10px; color: #94a3b8;">7 Stages</div>
               </div>
             </label>
           </div>
@@ -729,8 +704,8 @@
         </div>
 
         <div>
-          <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Courier & Tracking Info (Optional)</label>
-          <input type="text" id="jobTracking" placeholder="e.g. DTDC / Professional Courier: TRK-987654" class="form-input">
+          <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Courier & Tracking Info</label>
+          <input type="text" id="jobTracking" placeholder="e.g. DTDC: TRK-987654" class="form-input">
         </div>
 
         <div>
@@ -750,14 +725,13 @@
 
         <div>
           <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Special Notes & Instructions</label>
-          <textarea id="jobNotes" rows="2" placeholder="Hook size, color code, destination address, special courier requests..." class="form-input" style="resize: none;"></textarea>
+          <textarea id="jobNotes" rows="2" placeholder="Hook size, color code, destination address..." class="form-input" style="resize: none;"></textarea>
         </div>
 
         <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #1e293b; padding-top: 10px;">
           <button type="button" onclick="closeNewJobModal()" class="btn btn-dark">Cancel</button>
           <button type="submit" class="btn btn-emerald">Save Order</button>
         </div>
-
       </form>
     </div>
   </div>
@@ -766,11 +740,11 @@
   <div id="channelSettingsModal" class="app-modal">
     <div class="modal-card" style="padding: 20px; max-width: 340px;">
       <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">⚙ Channel Settings</h4>
-      <p style="font-size: 11px; color: #94a3b8; margin-bottom: 12px;">Change the company sync channel code used to link all worker devices.</p>
+      <p style="font-size: 11px; color: #94a3b8; margin-bottom: 12px;">Change company sync channel code.</p>
       
       <div style="position: relative; margin-bottom: 14px;">
         <input type="password" id="inputCustomChannel" class="form-input" style="font-family: monospace; text-transform: uppercase; color: #10b981; font-weight: bold;">
-        <button type="button" onclick="toggleInputSecret('inputCustomChannel', this)" style="position: absolute; right: 10px; top: 8px; background: none; border: none; color: #94a3b8; cursor: pointer;">👁️</button>
+        <button type="button" onclick="toggleInputSecret('inputCustomChannel', this)" style="position: absolute; right: 10px; top: 8px; background: none; border: none; color: #94a3b8; cursor: pointer;">👁️️</button>
       </div>
 
       <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid #1e293b; padding-top: 10px;">
@@ -808,14 +782,12 @@
     </div>
   </div>
 
-  <!-- Toast Notification Box -->
   <div id="toast">
     <span id="toastIcon">🔔</span>
     <span id="toastMessage">Notification</span>
   </div>
 
   <script>
-    /* ================= SYSTEM CONFIGURATION WITH COURIER DISPATCH ================= */
     const LANYARD_STAGES = [
       { id: 'confirmation',       name: 'Confirmation',        icon: '📝' },
       { id: 'printing',           name: 'Printing',            icon: '🖨' },
@@ -839,10 +811,8 @@
       { id: 'delivered',          name: 'Delivered / Received',icon: '📬', isDelivered: true }
     ];
 
-    /* High Performance Unified Realtime Cloud Broker */
     const PRIMARY_BROKER = 'wss://broker.emqx.io:8084/mqtt';
 
-    /* Built-in Predefined Verified Staff Accounts */
     const DEFAULT_STAFF_ACCOUNTS = [
       { username: 'asif',       pin: '2026', name: 'Mhd Asif',        role: 'admin' },
       { username: 'supervisor', pin: '2026', name: 'Shift Supervisor', role: 'admin' },
@@ -850,12 +820,17 @@
       { username: 'operator2',  pin: '1234', name: 'Packing & Dispatch', role: 'staff' }
     ];
 
-    /* Storage Helpers */
     function safeGet(key, defVal = '') {
       try { const v = localStorage.getItem(key); return v !== null ? v : defVal; } catch(e) { return defVal; }
     }
     function safeSet(key, val) {
-      try { localStorage.setItem(key, val); } catch(e) {}
+      try { 
+        localStorage.setItem(key, val); 
+      } catch(e) {
+        if (e.name === 'QuotaExceededError') {
+          showToast('Storage full! Please clear old finished jobs.', 'warning');
+        }
+      }
     }
     function safeSessionGet(key, defVal = '') {
       try { const v = sessionStorage.getItem(key); return v !== null ? v : defVal; } catch(e) { return defVal; }
@@ -864,16 +839,14 @@
       try { sessionStorage.setItem(key, val); } catch(e) {}
     }
 
-    /* Core Variables */
     let currentUserId = getOrCreateUserId();
     const DEFAULT_FACTORY_PASS = 'PRINTO';
     let factorySyncChannel = safeGet('prod_factory_channel', '');
     let isCodeVisible = false;
     let currentTypeFilter = 'all';
     let currentStatusFilter = 'all';
-    let currentDateFilter = 'all'; // 'all', 'today', 'yesterday', or 'YYYY-MM-DD'
+    let currentDateFilter = 'all';
 
-    /* User Authentication Session */
     let currentUserSession = loadUserSession();
     let jobs = [];
     let deletedJobIds = loadDeletedIds();
@@ -955,7 +928,6 @@
         if (raw) {
           const parsed = JSON.parse(raw);
           if (Array.isArray(parsed)) {
-            // Filter out any jobs that have been permanently deleted
             return parsed.filter(j => j && j.id && !deletedJobIds.includes(j.id));
           }
         }
@@ -967,7 +939,6 @@
       try { safeSet(getStorageKey(), JSON.stringify(jobs)); } catch(err) {}
     }
 
-    /* Update Auth & Roles in UI */
     function updateAuthUI() {
       const btn = document.getElementById('authBtn');
       const icon = document.getElementById('authIcon');
@@ -1001,7 +972,7 @@
         if (text) text.innerText = 'Staff Login';
 
         if (banner) banner.className = 'role-banner';
-        if (bannerIcon) bannerIcon.innerText = '👁️️';
+        if (bannerIcon) bannerIcon.innerText = '👁';
         if (bannerText) bannerText.innerText = 'View-Only Mode: Sign in with your staff account to add or update orders.';
         if (bannerAction) {
           bannerAction.innerText = 'Staff Login';
@@ -1068,7 +1039,6 @@
       }
     };
 
-    /* Account Management Modal Functions */
     window.openManageUsersModal = function() {
       if (!currentUserSession || currentUserSession.role !== 'admin') {
         showToast('Admin privilege required!', 'warning');
@@ -1133,7 +1103,6 @@
       showToast(`Account @${username} removed.`, 'info');
     };
 
-    /* Modal Utility Functions */
     function openModal(id) {
       const el = document.getElementById(id);
       if (el) el.classList.add('active');
@@ -1144,7 +1113,6 @@
       if (el) el.classList.remove('active');
     }
 
-    /* Realtime MQTT Sync Engine */
     function initRealtimeSync() {
       updateChannelLabelDisplay();
 
@@ -1157,7 +1125,7 @@
       }
 
       if (typeof mqtt === 'undefined') {
-        updateSyncBadge('offline', 'Offline (Script not loaded)');
+        updateSyncBadge('offline', 'Offline');
         return;
       }
 
@@ -1166,12 +1134,11 @@
 
     function getSyncTopic() {
       const channel = (factorySyncChannel || DEFAULT_FACTORY_PASS).toUpperCase();
-      return `printotrack_factory_sync_v22/${channel}`;
+      return `printocards_factory_sync_v24/${channel}`;
     }
 
     function connectToActiveBroker() {
       updateSyncBadge('connecting', 'Connecting to Cloud...');
-
       const clientId = 'printo_' + currentUserId + '_' + Math.random().toString(16).substring(2, 6);
 
       try {
@@ -1194,7 +1161,6 @@
           updateSyncBadge('connected', 'Live Cloud Sync');
           mqttClient.subscribe(topic, { qos: 1 });
           
-          // Request initial state from other connected factory devices
           broadcastMessage({
             type: 'STATE_REQUEST',
             sender: currentUserId
@@ -1209,7 +1175,7 @@
           } catch (e) {}
         });
 
-        mqttClient.on('error', (err) => {
+        mqttClient.on('error', () => {
           updateSyncBadge('offline', 'Retrying Connection...');
         });
 
@@ -1242,7 +1208,7 @@
     function handleIncomingBroadcast(data) {
       if (!data) return;
 
-      // 1. INSTANT ATOMIC STAGE UPDATE (Lightning Fast)
+      // 1. ATOMIC STAGE UPDATE
       if (data.type === 'STAGE_TOGGLE') {
         const job = jobs.find(j => j.id === data.jobId);
         if (job) {
@@ -1258,14 +1224,13 @@
           showToast(`⚡ Live Update: "${job.title}" ➔ ${stageName} (${job.updatedByName})`, 'info');
         }
       } 
-      // 2. NEW JOB CREATED (INCLUDES PROOF IMAGE)
+      // 2. NEW JOB CREATED
       else if (data.type === 'JOB_UPSERT') {
         if (data.job && data.job.id) {
           if (deletedJobIds.includes(data.job.id)) return;
 
           const idx = jobs.findIndex(j => j.id === data.job.id);
           if (idx !== -1) {
-            // Preserve existing proofImage if new payload has it null
             const existingImage = jobs[idx].proofImage;
             jobs[idx] = data.job;
             if (!jobs[idx].proofImage && existingImage) {
@@ -1276,10 +1241,10 @@
           }
           saveLocalJobs();
           renderJobs();
-          showToast(`📦 New Order Added: "${data.job.title}" by ${data.job.createdByName || 'Staff'}`, 'success');
+          showToast(`📦 New Order: "${data.job.title}" by ${data.job.createdByName || 'Staff'}`, 'success');
         }
       } 
-      // 3. JOB DELETED (CROSS-DEVICE PURGE)
+      // 3. JOB DELETED
       else if (data.type === 'JOB_DELETE') {
         if (data.jobId) {
           recordDeletedId(data.jobId);
@@ -1292,11 +1257,12 @@
           }
         }
       } 
-      // 4. PEER STATE REPLICATION (PRESERVES PROOF IMAGES)
+      // 4. PEER STATE REPLICATION (OPTIMIZED PAYLOAD)
       else if (data.type === 'STATE_REQUEST') {
         if (jobs.length > 0 || deletedJobIds.length > 0) {
-          // Send all jobs with compressed proofImages intact
-          const shareableJobs = jobs.slice(0, 40);
+          const shareableJobs = jobs.slice(0, 30).map(j => {
+            return { ...j };
+          });
           broadcastMessage({
             type: 'STATE_SHARE',
             sender: currentUserId,
@@ -1316,6 +1282,7 @@
       }
     }
 
+    // Deep merging stages so independent updates are preserved
     function mergeJobsLists(localList, remoteList) {
       const map = new Map();
       localList.forEach(j => {
@@ -1334,7 +1301,9 @@
           const lTime = lj.updatedAt || 0;
           const rTime = rj.updatedAt || 0;
           const merged = (rTime >= lTime) ? { ...lj, ...rj } : { ...rj, ...lj };
-          // Guaranteed preservation of proof image if either copy has it
+          
+          // Deep merge stage statuses to prevent concurrent overwrite
+          merged.stages = { ...(lj.stages || {}), ...(rj.stages || {}) };
           merged.proofImage = rj.proofImage || lj.proofImage || null;
           map.set(rj.id, merged);
         }
@@ -1351,7 +1320,6 @@
       return stages.every(s => job.stages && job.stages[s.id] === true);
     }
 
-    /* Helper: Format Timestamp to YYYY-MM-DD */
     function formatToDateString(timestampOrStr) {
       if (!timestampOrStr) return '';
       const d = new Date(timestampOrStr);
@@ -1362,7 +1330,6 @@
       return `${year}-${month}-${day}`;
     }
 
-    /* Date Filter Setter */
     window.setDateFilter = function(filterVal) {
       currentDateFilter = filterVal;
       const customInput = document.getElementById('customDateInput');
@@ -1370,11 +1337,7 @@
       ['all', 'today', 'yesterday'].forEach(btnKey => {
         const btn = document.getElementById(`dateBtn-${btnKey}`);
         if (!btn) return;
-        if (filterVal === btnKey) {
-          btn.className = 'filter-btn active';
-        } else {
-          btn.className = 'filter-btn';
-        }
+        btn.className = (filterVal === btnKey) ? 'filter-btn active' : 'filter-btn';
       });
 
       if (filterVal !== 'all' && filterVal !== 'today' && filterVal !== 'yesterday') {
@@ -1386,7 +1349,6 @@
       renderJobs();
     };
 
-    /* Render Jobs Cards */
     function renderJobs() {
       const container = document.getElementById('jobsGrid');
       const emptyState = document.getElementById('emptyState');
@@ -1414,7 +1376,6 @@
         if (currentStatusFilter === 'pending' && completed) return false;
         if (currentStatusFilter === 'completed' && !completed) return false;
 
-        // Date Matching Logic
         if (targetDateStr) {
           if (dateMode === 'activity') {
             const updatedDate = formatToDateString(job.updatedAt);
@@ -1486,7 +1447,6 @@
 
         return `
           <div class="job-card ${completed ? 'completed' : ''}">
-            
             <div>
               <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
                 <div style="flex: 1;">
@@ -1530,7 +1490,6 @@
                 </div>
               ` : ''}
 
-              <!-- Status Light Panel -->
               <div class="status-panel ${completed ? 'green' : 'red'}">
                 <div style="display: flex; align-items: center; gap: 10px;">
                   <div class="${completed ? 'light-green' : 'light-red'}"></div>
@@ -1546,14 +1505,13 @@
 
                 <div>
                   ${job.proofImage ? `
-                    <div onclick="openLightbox('${job.proofImage}', '${escapeHtml(job.title)}')" style="cursor: pointer;" title="Click to view full artwork">
-                      <img src="${job.proofImage}" alt="Artwork Proof" style="width: 38px; height: 38px; border-radius: 8px; object-fit: cover; border: 1.5px solid #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);">
+                    <div onclick="openLightbox('${job.proofImage}', '${escapeHtml(job.title)}')" style="cursor: pointer;" title="Click to view artwork">
+                      <img src="${job.proofImage}" alt="Proof" style="width: 38px; height: 38px; border-radius: 8px; object-fit: cover; border: 1.5px solid #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);">
                     </div>
                   ` : ''}
                 </div>
               </div>
 
-              <!-- Progress Bar -->
               <div style="margin-top: 12px;">
                 <div style="display: flex; justify-content: space-between; font-size: 10px; margin-bottom: 3px; color: #94a3b8;">
                   <span>Stages (${completedCount}/${stagesList.length})</span>
@@ -1564,7 +1522,6 @@
                 </div>
               </div>
 
-              <!-- Production & Dispatch Stages Grid -->
               <div class="stages-grid">
                 ${stagesList.map(st => {
                   const isDone = job.stages && job.stages[st.id] === true;
@@ -1588,10 +1545,8 @@
                   `;
                 }).join('')}
               </div>
-
             </div>
 
-            <!-- Card Footer: Audit Trail -->
             <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid rgba(30, 41, 59, 0.7); display: flex; flex-direction: column; gap: 4px; font-size: 10px; color: #64748b;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <span>${job.deliveryDate ? '📅 Due: ' + job.deliveryDate : 'No due date'}</span>
@@ -1602,13 +1557,11 @@
                 <span>Updated by: <strong style="color: #10b981;">👤 ${escapeHtml(editorName)}</strong></span>
               </div>
             </div>
-
           </div>
         `;
       }).join('');
     }
 
-    /* Toggle Stage Click with Verified User Session */
     window.handleStageToggleClick = function(jobId, stageId) {
       if (!requireUserAuth()) return;
 
@@ -1625,7 +1578,6 @@
       saveLocalJobs();
       renderJobs();
 
-      // Send ultra-compact message (only 150 bytes) for instantaneous cross-device update
       broadcastMessage({
         type: 'STAGE_TOGGLE',
         sender: currentUserId,
@@ -1641,7 +1593,6 @@
       showToast(`${job.title}: ${stageName} ${done ? 'Completed' : 'Reset'} (${currentUserSession.name})`, done ? 'success' : 'default');
     };
 
-    /* Create New Job Form Handler */
     window.handleCreateJob = function(e) {
       e.preventDefault();
       if (!requireUserAuth()) return;
@@ -1681,24 +1632,23 @@
       renderJobs();
       closeNewJobModal();
 
-      // Broadcast new job with proof image to all devices
       broadcastMessage({
         type: 'JOB_UPSERT',
         sender: currentUserId,
         job: newJob
       });
 
-      showToast(`New job "${title}" created with artwork!`, 'success');
+      showToast(`New job "${title}" created!`, 'success');
     };
 
-    /* Image Proof Upload & Ultra-Lightweight Compression (~4-5KB) */
+    // Lightweight image compression to prevent memory overflow
     window.handleImageSelection = function(e) {
       const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(evt) {
-        compressBase64Image(evt.target.result, 240, 0.5, (compressedData) => {
+        compressBase64Image(evt.target.result, 180, 0.45, (compressedData) => {
           tempNewJobImage = compressedData;
           document.getElementById('imagePreview').src = compressedData;
           document.getElementById('imageUploadPlaceholder').style.display = 'none';
@@ -1736,7 +1686,6 @@
       img.src = src;
     }
 
-    /* Channel Code Utilities */
     window.toggleSecretVisibility = function() {
       isCodeVisible = !isCodeVisible;
       updateChannelLabelDisplay();
@@ -1769,7 +1718,7 @@
       const validCode = (safeGet('prod_factory_password', DEFAULT_FACTORY_PASS)).toUpperCase();
 
       if (enteredCode !== validCode) {
-        showToast('Invalid Security Code! Please enter valid code.', 'warning');
+        showToast('Invalid Security Code!', 'warning');
         return;
       }
 
@@ -1784,11 +1733,6 @@
     };
 
     window.handleChannelSettingsClick = function() {
-      if (!requireUserAuth()) return;
-      openChannelModal();
-    };
-
-    window.openChannelModal = function() {
       if (!requireUserAuth()) return;
       document.getElementById('inputCustomChannel').value = factorySyncChannel || DEFAULT_FACTORY_PASS;
       openModal('channelSettingsModal');
@@ -1829,7 +1773,6 @@
       showToast('App Locked', 'warning');
     };
 
-    /* Order Deletion */
     window.promptDeleteJob = function(jobId) {
       if (!requireUserAuth()) return;
       pendingDeleteId = jobId;
@@ -1861,7 +1804,6 @@
       showToast(`Order deleted permanently across all devices.`, 'warning');
     };
 
-    /* Lightbox Artwork Viewer */
     window.openLightbox = function(imgSrc, caption) {
       document.getElementById('lightboxImage').src = imgSrc;
       document.getElementById('lightboxCaption').innerText = caption || '';
@@ -1882,7 +1824,6 @@
       closeModal('newJobModal');
     };
 
-    /* Filter Controls */
     window.setTypeFilter = function(type) {
       currentTypeFilter = type;
       ['all', 'lanyard', 'pvc'].forEach(t => {
@@ -1903,7 +1844,6 @@
       renderJobs();
     };
 
-    /* Sync Connection Badge UI */
     function updateSyncBadge(status, customText) {
       const badge = document.getElementById('syncBadge');
       const text = document.getElementById('syncBadgeText');
@@ -1931,7 +1871,6 @@
       }
     }
 
-    /* Complete Excel / CSV Export with Courier & Audit Trail */
     window.exportToExcel = function() {
       try {
         const searchVal = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
@@ -1993,9 +1932,9 @@
           'Total Stages',
           'Completed Stages List',
           'Special Notes',
-          'Created By (Staff Name)',
+          'Created By',
           'Created Date & Time',
-          'Last Updated By (Staff Name)',
+          'Last Updated By',
           'Last Updated Date & Time'
         ];
 
@@ -2044,64 +1983,22 @@
           ].join(',');
         });
 
-        if (rows.length === 0) {
-          rows.push([
-            '"NO_DATA"', '""', '"No orders matching current filter"', '""', '""', '""', '""', '""', '""', '""', '""', '""', '""', '""', '""', '""', '""', '""'
-          ].join(','));
-        }
-
         const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
-        const dateTag = targetDateStr ? `_${targetDateStr}` : `_${new Date().toISOString().slice(0, 10)}`;
-        const fileName = `Production_Dispatch_Report${dateTag}.csv`;
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const blobUrl = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `PrintoCards_Report_${targetDateStr || new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(blobUrl); }, 1000);
 
-        let downloaded = false;
-
-        try {
-          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-          if (window.navigator && window.navigator.msSaveOrOpenBlob) {
-            window.navigator.msSaveOrOpenBlob(blob, fileName);
-            downloaded = true;
-          } else {
-            const blobUrl = window.URL.createObjectURL(blob);
-            const downloadLink = document.createElement('a');
-            downloadLink.style.display = 'none';
-            downloadLink.href = blobUrl;
-            downloadLink.download = fileName;
-            downloadLink.setAttribute('download', fileName);
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            setTimeout(() => {
-              try {
-                document.body.removeChild(downloadLink);
-                window.URL.revokeObjectURL(blobUrl);
-              } catch(e){}
-            }, 1000);
-            downloaded = true;
-          }
-        } catch (blobErr) {
-          downloaded = false;
-        }
-
-        if (!downloaded) {
-          const encodedUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
-          const fallbackLink = document.createElement('a');
-          fallbackLink.href = encodedUri;
-          fallbackLink.download = fileName;
-          fallbackLink.target = '_blank';
-          document.body.appendChild(fallbackLink);
-          fallbackLink.click();
-          setTimeout(() => {
-            try { document.body.removeChild(fallbackLink); } catch(e){}
-          }, 800);
-        }
-
-        showToast(list.length > 0 ? 'Excel report exported successfully!' : 'Sample Excel report generated!', 'success');
+        showToast(list.length > 0 ? 'Excel report exported successfully!' : 'Sample report exported!', 'success');
       } catch (err) {
         showToast('Export error: ' + err.message, 'warning');
       }
     };
 
-    /* Toast Notification Utility */
     let toastTimer = null;
     function showToast(message, type = 'default') {
       const toast = document.getElementById('toast');
@@ -2146,9 +2043,8 @@
         .replace(/'/g, '&#039;');
     }
 
-    /* Event Listeners */
     window.addEventListener('online', () => {
-      showToast('Internet restored. Connecting to cloud...', 'info');
+      showToast('Network restored. Reconnecting cloud...', 'info');
       connectToActiveBroker();
     });
 
