@@ -439,7 +439,7 @@
   <header class="header-bar">
     <div class="header-content">
       <div class="brand-wrap">
-        <div class="brand-icon">⚙️</div>
+        <div class="brand-icon">⚙️️</div>
         <div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <h1 class="brand-title">PRINTO<span>TRACK</span></h1>
@@ -616,7 +616,7 @@
             type="text" 
             id="authUsernameInput" 
             required 
-            placeholder="e.g name / position" 
+            placeholder="e.g. name / position" 
             class="form-input"
             autocomplete="username"
             style="text-transform: lowercase;"
@@ -765,7 +765,7 @@
   <!-- 5. Channel Settings Modal -->
   <div id="channelSettingsModal" class="app-modal">
     <div class="modal-card" style="padding: 20px; max-width: 340px;">
-      <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">⚙️️ Channel Settings</h4>
+      <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">⚙ Channel Settings</h4>
       <p style="font-size: 11px; color: #94a3b8; margin-bottom: 12px;">Change the company sync channel code used to link all worker devices.</p>
       
       <div style="position: relative; margin-bottom: 14px;">
@@ -876,6 +876,7 @@
     /* User Authentication Session */
     let currentUserSession = loadUserSession();
     let jobs = [];
+    let deletedJobIds = loadDeletedIds();
     let tempNewJobImage = null;
     let pendingDeleteId = null;
     let mqttClient = null;
@@ -892,6 +893,25 @@
 
     function getStorageKey() {
       return `prod_data_${factorySyncChannel || DEFAULT_FACTORY_PASS}`;
+    }
+
+    function loadDeletedIds() {
+      try {
+        const raw = safeGet('prod_deleted_job_ids', '[]');
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch(e) {
+        return [];
+      }
+    }
+
+    function recordDeletedId(id) {
+      if (!id) return;
+      if (!deletedJobIds.includes(id)) {
+        deletedJobIds.push(id);
+        if (deletedJobIds.length > 500) deletedJobIds.shift();
+        safeSet('prod_deleted_job_ids', JSON.stringify(deletedJobIds));
+      }
     }
 
     function loadStaffAccounts() {
@@ -934,15 +954,9 @@
         const raw = safeGet(getStorageKey());
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-        }
-        
-        const legacyKeys = ['prod_data_PRINTO', 'prod_jobs_data', 'production_jobs'];
-        for (const k of legacyKeys) {
-          const legacy = safeGet(k);
-          if (legacy) {
-            const parsed = JSON.parse(legacy);
-            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          if (Array.isArray(parsed)) {
+            // Filter out any jobs that have been permanently deleted
+            return parsed.filter(j => j && j.id && !deletedJobIds.includes(j.id));
           }
         }
       } catch (err) {}
@@ -987,7 +1001,7 @@
         if (text) text.innerText = 'Staff Login';
 
         if (banner) banner.className = 'role-banner';
-        if (bannerIcon) bannerIcon.innerText = '👁️';
+        if (bannerIcon) bannerIcon.innerText = '👁️️';
         if (bannerText) bannerText.innerText = 'View-Only Mode: Sign in with your staff account to add or update orders.';
         if (bannerAction) {
           bannerAction.innerText = 'Staff Login';
@@ -1244,12 +1258,19 @@
           showToast(`⚡ Live Update: "${job.title}" ➔ ${stageName} (${job.updatedByName})`, 'info');
         }
       } 
-      // 2. NEW JOB CREATED
+      // 2. NEW JOB CREATED (INCLUDES PROOF IMAGE)
       else if (data.type === 'JOB_UPSERT') {
         if (data.job && data.job.id) {
+          if (deletedJobIds.includes(data.job.id)) return;
+
           const idx = jobs.findIndex(j => j.id === data.job.id);
           if (idx !== -1) {
+            // Preserve existing proofImage if new payload has it null
+            const existingImage = jobs[idx].proofImage;
             jobs[idx] = data.job;
+            if (!jobs[idx].proofImage && existingImage) {
+              jobs[idx].proofImage = existingImage;
+            }
           } else {
             jobs.unshift(data.job);
           }
@@ -1258,31 +1279,36 @@
           showToast(`📦 New Order Added: "${data.job.title}" by ${data.job.createdByName || 'Staff'}`, 'success');
         }
       } 
-      // 3. JOB DELETED
+      // 3. JOB DELETED (CROSS-DEVICE PURGE)
       else if (data.type === 'JOB_DELETE') {
         if (data.jobId) {
+          recordDeletedId(data.jobId);
+          const hadJob = jobs.some(j => j.id === data.jobId);
           jobs = jobs.filter(j => j.id !== data.jobId);
           saveLocalJobs();
           renderJobs();
-          showToast('An order was deleted from cloud.', 'warning');
+          if (hadJob) {
+            showToast('🗑️ An order was deleted across all devices.', 'warning');
+          }
         }
       } 
-      // 4. PEER STATE REPLICATION
+      // 4. PEER STATE REPLICATION (PRESERVES PROOF IMAGES)
       else if (data.type === 'STATE_REQUEST') {
-        if (jobs.length > 0) {
-          // Send lightweight copy (without heavy images) so message never gets dropped
-          const lightweightJobs = jobs.slice(0, 50).map(j => ({
-            ...j,
-            proofImage: null // avoid large base64 packets
-          }));
+        if (jobs.length > 0 || deletedJobIds.length > 0) {
+          // Send all jobs with compressed proofImages intact
+          const shareableJobs = jobs.slice(0, 40);
           broadcastMessage({
             type: 'STATE_SHARE',
             sender: currentUserId,
-            jobs: lightweightJobs
+            jobs: shareableJobs,
+            deletedIds: deletedJobIds.slice(-100)
           });
         }
       } else if (data.type === 'STATE_SHARE') {
-        if (Array.isArray(data.jobs) && data.jobs.length > 0) {
+        if (Array.isArray(data.deletedIds)) {
+          data.deletedIds.forEach(id => recordDeletedId(id));
+        }
+        if (Array.isArray(data.jobs)) {
           jobs = mergeJobsLists(jobs, data.jobs);
           saveLocalJobs();
           renderJobs();
@@ -1292,19 +1318,25 @@
 
     function mergeJobsLists(localList, remoteList) {
       const map = new Map();
-      localList.forEach(j => map.set(j.id, j));
+      localList.forEach(j => {
+        if (j && j.id && !deletedJobIds.includes(j.id)) {
+          map.set(j.id, j);
+        }
+      });
+
       remoteList.forEach(rj => {
+        if (!rj || !rj.id || deletedJobIds.includes(rj.id)) return;
+
         if (!map.has(rj.id)) {
           map.set(rj.id, rj);
         } else {
           const lj = map.get(rj.id);
           const lTime = lj.updatedAt || 0;
           const rTime = rj.updatedAt || 0;
-          if (rTime >= lTime) {
-            // retain local proof image if remote stripped it
-            rj.proofImage = rj.proofImage || lj.proofImage;
-            map.set(rj.id, rj);
-          }
+          const merged = (rTime >= lTime) ? { ...lj, ...rj } : { ...rj, ...lj };
+          // Guaranteed preservation of proof image if either copy has it
+          merged.proofImage = rj.proofImage || lj.proofImage || null;
+          map.set(rj.id, merged);
         }
       });
       return Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -1515,7 +1547,7 @@
                 <div>
                   ${job.proofImage ? `
                     <div onclick="openLightbox('${job.proofImage}', '${escapeHtml(job.title)}')" style="cursor: pointer;" title="Click to view full artwork">
-                      <img src="${job.proofImage}" alt="Artwork Proof" style="width: 36px; height: 36px; border-radius: 8px; object-fit: cover; border: 1px solid #334155;">
+                      <img src="${job.proofImage}" alt="Artwork Proof" style="width: 38px; height: 38px; border-radius: 8px; object-fit: cover; border: 1.5px solid #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);">
                     </div>
                   ` : ''}
                 </div>
@@ -1649,24 +1681,24 @@
       renderJobs();
       closeNewJobModal();
 
-      // Broadcast new job with compact data
+      // Broadcast new job with proof image to all devices
       broadcastMessage({
         type: 'JOB_UPSERT',
         sender: currentUserId,
         job: newJob
       });
 
-      showToast(`New job "${title}" created by ${creatorName}!`, 'success');
+      showToast(`New job "${title}" created with artwork!`, 'success');
     };
 
-    /* Image Proof Upload & Ultra-Lightweight Compression (<8KB) */
+    /* Image Proof Upload & Ultra-Lightweight Compression (~4-5KB) */
     window.handleImageSelection = function(e) {
       const file = e.target.files[0];
       if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function(evt) {
-        compressBase64Image(evt.target.result, 180, 0.45, (compressedData) => {
+        compressBase64Image(evt.target.result, 240, 0.5, (compressedData) => {
           tempNewJobImage = compressedData;
           document.getElementById('imagePreview').src = compressedData;
           document.getElementById('imageUploadPlaceholder').style.display = 'none';
@@ -1812,6 +1844,8 @@
     window.executeDeleteJob = function() {
       if (!requireUserAuth() || !pendingDeleteId) return;
       const jId = pendingDeleteId;
+      
+      recordDeletedId(jId);
       jobs = jobs.filter(j => j.id !== jId);
       saveLocalJobs();
       renderJobs();
@@ -1820,11 +1854,11 @@
       broadcastMessage({
         type: 'JOB_DELETE',
         sender: currentUserId,
-        jobId: jId
+        jobId: jId,
+        timestamp: Date.now()
       });
 
-      broadcastRetainedSnapshot();
-      showToast(`Order deleted by ${currentUserSession.name}`, 'warning');
+      showToast(`Order deleted permanently across all devices.`, 'warning');
     };
 
     /* Lightbox Artwork Viewer */
@@ -1971,7 +2005,6 @@
         };
 
         const rows = list.map(j => {
-          const completed = isJobCompleted(j);
           const stagesList = getJobStages(j.jobType || 'lanyard');
           let doneCount = 0;
           const doneNames = [];
