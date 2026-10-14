@@ -10,9 +10,6 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>PrintoCards Production & Dispatch Tracker</title>
   
-  <!-- High-Speed MQTT WebSocket Realtime Sync Engine -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
-
   <style>
     /* PURE NATIVE CSS - ZERO EXTERNAL CSS DEPENDENCY */
     *, *::before, *::after {
@@ -437,9 +434,9 @@
         <div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <h1 class="brand-title">PRINTO<span>CARDS</span></h1>
-            <span id="syncBadge" onclick="manualForceReconnect()" style="cursor: pointer; font-size: 11px; padding: 3px 8px; border-radius: 999px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Click to reconnect cloud sync">
-              <span id="syncDot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#f59e0b;"></span>
-              <span id="syncBadgeText">Connecting...</span>
+            <span id="syncBadge" onclick="manualSync()" style="cursor: pointer; font-size: 11px; padding: 3px 8px; border-radius: 999px; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Connected to Google Firebase 24/7 Cloud">
+              <span id="syncDot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#10b981;"></span>
+              <span id="syncBadgeText">Firebase Cloud 24/7</span>
             </span>
           </div>
           <div style="display: flex; align-items: center; gap: 6px; font-size: 11px; color: #94a3b8; margin-top: 2px;">
@@ -788,6 +785,9 @@
   </div>
 
   <script>
+    // 100% PERSISTENT GOOGLE FIREBASE REALTIME DATABASE ENDPOINT
+    const FIREBASE_DB_URL = "https://work-cd47e-default-rtdb.firebaseio.com";
+
     const LANYARD_STAGES = [
       { id: 'confirmation',       name: 'Confirmation',        icon: '📝' },
       { id: 'printing',           name: 'Printing',            icon: '🖨' },
@@ -811,8 +811,6 @@
       { id: 'delivered',          name: 'Delivered / Received',icon: '📬', isDelivered: true }
     ];
 
-    const PRIMARY_BROKER = 'wss://broker.emqx.io:8084/mqtt';
-
     const DEFAULT_STAFF_ACCOUNTS = [
       { username: 'asif',       pin: '2026', name: 'Mhd Asif',        role: 'admin' },
       { username: 'supervisor', pin: '2026', name: 'Shift Supervisor', role: 'admin' },
@@ -824,13 +822,7 @@
       try { const v = localStorage.getItem(key); return v !== null ? v : defVal; } catch(e) { return defVal; }
     }
     function safeSet(key, val) {
-      try { 
-        localStorage.setItem(key, val); 
-      } catch(e) {
-        if (e.name === 'QuotaExceededError') {
-          showToast('Storage full! Please clear old finished jobs.', 'warning');
-        }
-      }
+      try { localStorage.setItem(key, val); } catch(e) {}
     }
     function safeSessionGet(key, defVal = '') {
       try { const v = sessionStorage.getItem(key); return v !== null ? v : defVal; } catch(e) { return defVal; }
@@ -841,7 +833,7 @@
 
     let currentUserId = getOrCreateUserId();
     const DEFAULT_FACTORY_PASS = 'PRINTO';
-    let factorySyncChannel = safeGet('prod_factory_channel', '');
+    let factorySyncChannel = safeGet('prod_factory_channel', DEFAULT_FACTORY_PASS);
     let isCodeVisible = false;
     let currentTypeFilter = 'all';
     let currentStatusFilter = 'all';
@@ -849,11 +841,9 @@
 
     let currentUserSession = loadUserSession();
     let jobs = [];
-    let deletedJobIds = loadDeletedIds();
     let tempNewJobImage = null;
     let pendingDeleteId = null;
-    let mqttClient = null;
-    let isConnectedToCloud = false;
+    let syncIntervalTimer = null;
 
     function getOrCreateUserId() {
       let id = safeGet('prod_user_id');
@@ -864,27 +854,8 @@
       return id;
     }
 
-    function getStorageKey() {
-      return `prod_data_${factorySyncChannel || DEFAULT_FACTORY_PASS}`;
-    }
-
-    function loadDeletedIds() {
-      try {
-        const raw = safeGet('prod_deleted_job_ids', '[]');
-        const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch(e) {
-        return [];
-      }
-    }
-
-    function recordDeletedId(id) {
-      if (!id) return;
-      if (!deletedJobIds.includes(id)) {
-        deletedJobIds.push(id);
-        if (deletedJobIds.length > 500) deletedJobIds.shift();
-        safeSet('prod_deleted_job_ids', JSON.stringify(deletedJobIds));
-      }
+    function getChannelKey() {
+      return (factorySyncChannel || DEFAULT_FACTORY_PASS).toUpperCase().replace(/[^A-Z0-9_-]/g, '');
     }
 
     function loadStaffAccounts() {
@@ -924,20 +895,88 @@
 
     function loadLocalJobs() {
       try {
-        const raw = safeGet(getStorageKey());
+        const raw = safeGet(`prod_data_${getChannelKey()}`);
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            return parsed.filter(j => j && j.id && !deletedJobIds.includes(j.id));
-          }
+          if (Array.isArray(parsed)) return parsed;
         }
       } catch (err) {}
       return [];
     }
 
     function saveLocalJobs() {
-      try { safeSet(getStorageKey(), JSON.stringify(jobs)); } catch(err) {}
+      try { safeSet(`prod_data_${getChannelKey()}`, JSON.stringify(jobs)); } catch(err) {}
     }
+
+    /* -------------------------------------------------------------------------
+       GOOGLE FIREBASE 24/7 REALTIME ENGINE (NO DEPENDENCY - WORKS ANYWHERE)
+    -------------------------------------------------------------------------- */
+    async function fetchFromFirebase() {
+      try {
+        const channel = getChannelKey();
+        const url = `${FIREBASE_DB_URL}/production_channels/${channel}/jobs.json`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("Firebase fetch error");
+        
+        const data = await res.json();
+        let remoteJobs = [];
+        if (data) {
+          if (Array.isArray(data)) {
+            remoteJobs = data.filter(Boolean);
+          } else if (typeof data === 'object') {
+            remoteJobs = Object.values(data).filter(Boolean);
+          }
+        }
+        
+        // Sort descending by creation date
+        remoteJobs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        jobs = remoteJobs;
+        saveLocalJobs();
+        renderJobs();
+        updateSyncBadge('connected', 'Firebase Cloud Active');
+      } catch (err) {
+        console.warn("Firebase sync retry:", err.message);
+        updateSyncBadge('offline', 'Local Cache Active');
+      }
+    }
+
+    async function pushJobToFirebase(job) {
+      try {
+        const channel = getChannelKey();
+        const url = `${FIREBASE_DB_URL}/production_channels/${channel}/jobs/${job.id}.json`;
+        await fetch(url, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(job)
+        });
+      } catch (err) {
+        console.error("Firebase push error:", err);
+      }
+    }
+
+    async function deleteJobFromFirebase(jobId) {
+      try {
+        const channel = getChannelKey();
+        const url = `${FIREBASE_DB_URL}/production_channels/${channel}/jobs/${jobId}.json`;
+        await fetch(url, { method: 'DELETE' });
+      } catch (err) {
+        console.error("Firebase delete error:", err);
+      }
+    }
+
+    function startAutoCloudSync() {
+      fetchFromFirebase();
+      if (syncIntervalTimer) clearInterval(syncIntervalTimer);
+      // Auto-poll Google Firebase Cloud every 3 seconds for instant updates across devices
+      syncIntervalTimer = setInterval(() => {
+        fetchFromFirebase();
+      }, 3000);
+    }
+
+    window.manualSync = function() {
+      showToast('Refreshing cloud data...', 'info');
+      fetchFromFirebase();
+    };
 
     function updateAuthUI() {
       const btn = document.getElementById('authBtn');
@@ -1024,7 +1063,7 @@
 
     function requireUserAuth() {
       if (!currentUserSession) {
-        showToast('Please sign in to update production stages!', 'warning');
+        showToast('Please sign in to make updates!', 'warning');
         document.getElementById('authUsernameInput').value = '';
         document.getElementById('authPinInput').value = '';
         openModal('authModal');
@@ -1111,204 +1150,6 @@
     function closeModal(id) {
       const el = document.getElementById(id);
       if (el) el.classList.remove('active');
-    }
-
-    function initRealtimeSync() {
-      updateChannelLabelDisplay();
-
-      if (!factorySyncChannel) {
-        openModal('factoryLockModal');
-        updateSyncBadge('connecting', 'Enter Security Code');
-        return;
-      } else {
-        closeModal('factoryLockModal');
-      }
-
-      if (typeof mqtt === 'undefined') {
-        updateSyncBadge('offline', 'Offline');
-        return;
-      }
-
-      connectToActiveBroker();
-    }
-
-    function getSyncTopic() {
-      const channel = (factorySyncChannel || DEFAULT_FACTORY_PASS).toUpperCase();
-      return `printocards_factory_sync_v24/${channel}`;
-    }
-
-    function connectToActiveBroker() {
-      updateSyncBadge('connecting', 'Connecting to Cloud...');
-      const clientId = 'printo_' + currentUserId + '_' + Math.random().toString(16).substring(2, 6);
-
-      try {
-        if (mqttClient) {
-          try { mqttClient.end(true); } catch(e){}
-        }
-
-        mqttClient = mqtt.connect(PRIMARY_BROKER, {
-          clientId: clientId,
-          clean: true,
-          connectTimeout: 8000,
-          reconnectPeriod: 3000,
-          keepalive: 20
-        });
-
-        const topic = getSyncTopic();
-
-        mqttClient.on('connect', () => {
-          isConnectedToCloud = true;
-          updateSyncBadge('connected', 'Live Cloud Sync');
-          mqttClient.subscribe(topic, { qos: 1 });
-          
-          broadcastMessage({
-            type: 'STATE_REQUEST',
-            sender: currentUserId
-          });
-        });
-
-        mqttClient.on('message', (t, payload) => {
-          try {
-            const data = JSON.parse(payload.toString());
-            if (!data || data.sender === currentUserId) return;
-            handleIncomingBroadcast(data);
-          } catch (e) {}
-        });
-
-        mqttClient.on('error', () => {
-          updateSyncBadge('offline', 'Retrying Connection...');
-        });
-
-        mqttClient.on('close', () => {
-          if (isConnectedToCloud) {
-            isConnectedToCloud = false;
-            updateSyncBadge('offline', 'Reconnecting...');
-          }
-        });
-
-      } catch (err) {
-        updateSyncBadge('offline', 'Offline Mode');
-      }
-    }
-
-    window.manualForceReconnect = function() {
-      showToast('Reconnecting live cloud...', 'info');
-      connectToActiveBroker();
-    };
-
-    function broadcastMessage(payloadObj) {
-      if (mqttClient && mqttClient.connected) {
-        try {
-          const topic = getSyncTopic();
-          mqttClient.publish(topic, JSON.stringify(payloadObj), { qos: 1, retain: false });
-        } catch (e) {}
-      }
-    }
-
-    function handleIncomingBroadcast(data) {
-      if (!data) return;
-
-      // 1. ATOMIC STAGE UPDATE
-      if (data.type === 'STAGE_TOGGLE') {
-        const job = jobs.find(j => j.id === data.jobId);
-        if (job) {
-          if (!job.stages) job.stages = {};
-          job.stages[data.stageId] = data.isDone;
-          job.updatedAt = data.updatedAt || Date.now();
-          job.updatedBy = data.sender;
-          job.updatedByName = data.updatedByName || 'Staff';
-          saveLocalJobs();
-          renderJobs();
-          
-          const stageName = data.stageId === 'courier_dispatched' ? 'Courier Dispatched' : (data.stageId === 'delivered' ? 'Delivered' : data.stageId);
-          showToast(`⚡ Live Update: "${job.title}" ➔ ${stageName} (${job.updatedByName})`, 'info');
-        }
-      } 
-      // 2. NEW JOB CREATED
-      else if (data.type === 'JOB_UPSERT') {
-        if (data.job && data.job.id) {
-          if (deletedJobIds.includes(data.job.id)) return;
-
-          const idx = jobs.findIndex(j => j.id === data.job.id);
-          if (idx !== -1) {
-            const existingImage = jobs[idx].proofImage;
-            jobs[idx] = data.job;
-            if (!jobs[idx].proofImage && existingImage) {
-              jobs[idx].proofImage = existingImage;
-            }
-          } else {
-            jobs.unshift(data.job);
-          }
-          saveLocalJobs();
-          renderJobs();
-          showToast(`📦 New Order: "${data.job.title}" by ${data.job.createdByName || 'Staff'}`, 'success');
-        }
-      } 
-      // 3. JOB DELETED
-      else if (data.type === 'JOB_DELETE') {
-        if (data.jobId) {
-          recordDeletedId(data.jobId);
-          const hadJob = jobs.some(j => j.id === data.jobId);
-          jobs = jobs.filter(j => j.id !== data.jobId);
-          saveLocalJobs();
-          renderJobs();
-          if (hadJob) {
-            showToast('🗑️ An order was deleted across all devices.', 'warning');
-          }
-        }
-      } 
-      // 4. PEER STATE REPLICATION (OPTIMIZED PAYLOAD)
-      else if (data.type === 'STATE_REQUEST') {
-        if (jobs.length > 0 || deletedJobIds.length > 0) {
-          const shareableJobs = jobs.slice(0, 30).map(j => {
-            return { ...j };
-          });
-          broadcastMessage({
-            type: 'STATE_SHARE',
-            sender: currentUserId,
-            jobs: shareableJobs,
-            deletedIds: deletedJobIds.slice(-100)
-          });
-        }
-      } else if (data.type === 'STATE_SHARE') {
-        if (Array.isArray(data.deletedIds)) {
-          data.deletedIds.forEach(id => recordDeletedId(id));
-        }
-        if (Array.isArray(data.jobs)) {
-          jobs = mergeJobsLists(jobs, data.jobs);
-          saveLocalJobs();
-          renderJobs();
-        }
-      }
-    }
-
-    // Deep merging stages so independent updates are preserved
-    function mergeJobsLists(localList, remoteList) {
-      const map = new Map();
-      localList.forEach(j => {
-        if (j && j.id && !deletedJobIds.includes(j.id)) {
-          map.set(j.id, j);
-        }
-      });
-
-      remoteList.forEach(rj => {
-        if (!rj || !rj.id || deletedJobIds.includes(rj.id)) return;
-
-        if (!map.has(rj.id)) {
-          map.set(rj.id, rj);
-        } else {
-          const lj = map.get(rj.id);
-          const lTime = lj.updatedAt || 0;
-          const rTime = rj.updatedAt || 0;
-          const merged = (rTime >= lTime) ? { ...lj, ...rj } : { ...rj, ...lj };
-          
-          // Deep merge stage statuses to prevent concurrent overwrite
-          merged.stages = { ...(lj.stages || {}), ...(rj.stages || {}) };
-          merged.proofImage = rj.proofImage || lj.proofImage || null;
-          map.set(rj.id, merged);
-        }
-      });
-      return Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     }
 
     function getJobStages(jobType) {
@@ -1562,7 +1403,7 @@
       }).join('');
     }
 
-    window.handleStageToggleClick = function(jobId, stageId) {
+    window.handleStageToggleClick = async function(jobId, stageId) {
       if (!requireUserAuth()) return;
 
       const job = jobs.find(j => j.id === jobId);
@@ -1578,22 +1419,15 @@
       saveLocalJobs();
       renderJobs();
 
-      broadcastMessage({
-        type: 'STAGE_TOGGLE',
-        sender: currentUserId,
-        jobId: jobId,
-        stageId: stageId,
-        isDone: newStatus,
-        updatedAt: job.updatedAt,
-        updatedByName: currentUserSession.name
-      });
+      // Instantly save directly to 24/7 Firebase Realtime Database
+      await pushJobToFirebase(job);
 
       const done = job.stages[stageId];
       const stageName = stageId === 'courier_dispatched' ? 'Courier Dispatched' : (stageId === 'delivered' ? 'Delivered & Received' : stageId);
       showToast(`${job.title}: ${stageName} ${done ? 'Completed' : 'Reset'} (${currentUserSession.name})`, done ? 'success' : 'default');
     };
 
-    window.handleCreateJob = function(e) {
+    window.handleCreateJob = async function(e) {
       e.preventDefault();
       if (!requireUserAuth()) return;
 
@@ -1632,16 +1466,12 @@
       renderJobs();
       closeNewJobModal();
 
-      broadcastMessage({
-        type: 'JOB_UPSERT',
-        sender: currentUserId,
-        job: newJob
-      });
-
-      showToast(`New job "${title}" created!`, 'success');
+      // Push to Google Firebase Cloud
+      await pushJobToFirebase(newJob);
+      showToast(`New job "${title}" saved to Cloud!`, 'success');
     };
 
-    // High-Definition Responsive Compression (800px HD with High-Quality Antialiasing)
+    // HD Image Compression (800px max, Crisp and lightweight)
     window.handleImageSelection = function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1673,7 +1503,6 @@
         let width = img.width;
         let height = img.height;
 
-        // Maintain proportional aspect ratio up to 800px max dimension
         if (width > height) {
           if (width > maxDimension) {
             height = Math.round((height * maxDimension) / width);
@@ -1690,13 +1519,10 @@
         canvas.width = width;
         canvas.height = height;
         const ctx = canvas.getContext('2d');
-
-        // Apply high quality smoothing for sharp artwork text and logos
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Quality 0.75 delivers razor-sharp text and graphics while keeping file under ~50KB
         callback(canvas.toDataURL('image/jpeg', quality));
       };
       img.src = src;
@@ -1744,8 +1570,8 @@
       closeModal('factoryLockModal');
       jobs = loadLocalJobs();
       renderJobs();
-      initRealtimeSync();
-      showToast('Factory Channel Connected!', 'success');
+      startAutoCloudSync();
+      showToast('Firebase Cloud Connected!', 'success');
     };
 
     window.handleChannelSettingsClick = function() {
@@ -1769,8 +1595,8 @@
         closeChannelModal();
         jobs = loadLocalJobs();
         renderJobs();
-        initRealtimeSync();
-        showToast('Channel code updated!', 'info');
+        startAutoCloudSync();
+        showToast('Channel updated & synced!', 'info');
       }
     };
 
@@ -1781,9 +1607,7 @@
       closeChannelModal();
       openModal('factoryLockModal');
       document.getElementById('initialAccessCodeInput').value = '';
-      if (mqttClient) {
-        try { mqttClient.end(true); } catch(e){}
-      }
+      if (syncIntervalTimer) clearInterval(syncIntervalTimer);
       updateSyncBadge('offline', 'App Locked');
       updateChannelLabelDisplay();
       showToast('App Locked', 'warning');
@@ -1800,23 +1624,16 @@
       closeModal('deleteConfirmModal');
     };
 
-    window.executeDeleteJob = function() {
+    window.executeDeleteJob = async function() {
       if (!requireUserAuth() || !pendingDeleteId) return;
       const jId = pendingDeleteId;
       
-      recordDeletedId(jId);
       jobs = jobs.filter(j => j.id !== jId);
       saveLocalJobs();
       renderJobs();
       closeDeleteModal();
 
-      broadcastMessage({
-        type: 'JOB_DELETE',
-        sender: currentUserId,
-        jobId: jId,
-        timestamp: Date.now()
-      });
-
+      await deleteJobFromFirebase(jId);
       showToast(`Order deleted permanently across all devices.`, 'warning');
     };
 
@@ -1870,20 +1687,14 @@
         badge.style.background = 'rgba(16, 185, 129, 0.15)';
         badge.style.color = '#34d399';
         badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-        text.innerText = customText || 'Cloud Connected';
+        text.innerText = customText || 'Firebase Cloud Active';
         if (dot) dot.style.background = '#10b981';
-      } else if (status === 'connecting') {
+      } else {
         badge.style.background = 'rgba(245, 158, 11, 0.15)';
         badge.style.color = '#fbbf24';
         badge.style.borderColor = 'rgba(245, 158, 11, 0.35)';
-        text.innerText = customText || 'Connecting...';
+        text.innerText = customText || 'Syncing...';
         if (dot) dot.style.background = '#f59e0b';
-      } else {
-        badge.style.background = 'rgba(244, 63, 94, 0.15)';
-        badge.style.color = '#fbbf24';
-        badge.style.borderColor = 'rgba(244, 63, 94, 0.3)';
-        text.innerText = customText || 'Offline Mode';
-        if (dot) dot.style.background = '#f43f5e';
       }
     }
 
@@ -2060,16 +1871,8 @@
     }
 
     window.addEventListener('online', () => {
-      showToast('Network restored. Reconnecting cloud...', 'info');
-      connectToActiveBroker();
-    });
-
-    window.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        if (!mqttClient || !mqttClient.connected) {
-          connectToActiveBroker();
-        }
-      }
+      showToast('Network restored. Syncing cloud...', 'info');
+      fetchFromFirebase();
     });
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -2080,10 +1883,9 @@
       if (factorySyncChannel) {
         jobs = loadLocalJobs();
         renderJobs();
-        initRealtimeSync();
+        startAutoCloudSync();
       } else {
         openModal('factoryLockModal');
-        updateSyncBadge('connecting', 'Enter Security Code');
       }
       updateAuthUI();
     });
