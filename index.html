@@ -9,11 +9,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
   <title>PrintoCards Production & Dispatch Tracker</title>
-  
-  <!-- Rock-Solid Dual-Protocol Realtime Engine: Paho MQTT WebSocket + Automatic Server Rotation -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
   <style>
+    /* PURE NATIVE CSS - ZERO EXTERNAL ASSET DEPENDENCY */
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
@@ -370,7 +368,7 @@
     }
 
     .stage-btn.dispatch-btn {
-      border: 1px dashed rgba(14, 165, 233, 0.4);
+      border: 1px dashed rgba(14, 165, 233, 0.45);
       background: rgba(14, 165, 233, 0.05);
     }
 
@@ -480,7 +478,7 @@
         <div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <h1 class="brand-title">PRINTO<span>CARDS</span></h1>
-            <span id="syncBadge" onclick="manualForceReconnect()" style="cursor: pointer; font-size: 11px; padding: 3px 8px; border-radius: 999px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Click to manually reconnect sync">
+            <span id="syncBadge" onclick="manualForceReconnect()" style="cursor: pointer; font-size: 11px; padding: 3px 8px; border-radius: 999px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Click to reconnect live cloud">
               <span id="syncDot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#f59e0b;"></span>
               <span id="syncBadgeText">Connecting...</span>
             </span>
@@ -607,7 +605,7 @@
 
         <div style="background: #0b0f19; padding: 10px 12px; border-radius: 10px; border: 1px solid #1e293b; font-size: 11px;">
           <div style="color: #94a3b8;">Order: <span id="dispatchJobTitleDisplay" style="color: #ffffff; font-weight: bold;"></span></div>
-          <div style="color: #64748b; font-size: 10px; margin-top: 2px;">Mark this order as dispatched by entering shipping information.</div>
+          <div style="color: #64748b; font-size: 10px; margin-top: 2px;">Record shipping details to complete the dispatch stage.</div>
         </div>
 
         <div>
@@ -631,7 +629,7 @@
           </div>
         </div>
 
-        <!-- 1. Courier Service Fields -->
+        <!-- Courier Service Inputs -->
         <div id="courierInputsGroup" style="display: flex; flex-direction: column; gap: 8px;">
           <div>
             <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Courier Service Partner *</label>
@@ -657,7 +655,7 @@
           </div>
         </div>
 
-        <!-- 2. Direct Delivery Vehicle Fields -->
+        <!-- Vehicle Delivery Inputs -->
         <div id="vehicleInputsGroup" style="display: none; flex-direction: column; gap: 8px;">
           <div>
             <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Vehicle Registration Number *</label>
@@ -999,10 +997,6 @@
       { id: 'delivered',          name: 'Delivered / Received',icon: '📬', isDelivered: true }
     ];
 
-    // High-Reliability Dual Public Brokers (Primary with Automatic Failover)
-    const PRIMARY_BROKER = 'wss://broker.emqx.io:8084/mqtt';
-    const BACKUP_BROKER  = 'wss://broker.hivemq.com:8884/mqtt';
-
     const DEFAULT_STAFF_ACCOUNTS = [
       { username: 'asif',       pin: '2026', name: 'Mhd Asif',        role: 'admin' },
       { username: 'supervisor', pin: '2026', name: 'Shift Supervisor', role: 'admin' },
@@ -1043,14 +1037,17 @@
     let tempNewJobImage = null;
     let tempVehicleImage = null;
     let pendingDeleteId = null;
-    let mqttClient = null;
-    let isConnectedToCloud = false;
-    let heartbeatTimer = null;
     let currentDispatchJobId = null;
 
-    // Cross-Tab Instant Sync Channel (Works instantly across tabs/windows on the same machine)
+    /* High-Reliability Native WebSocket Engine (Port 443 - Standard SSL WebSockets - Never Blocked) */
+    const PIESOCKET_API_KEY = 'oCdCMcMPQpbvNjUIzqtvF1d2X2okWpDQj4AwARJuAgtjhzKxVEjQU6IdCjwm';
+    let nativeWs = null;
+    let wsHeartbeat = null;
+    let wsReconnectTimeout = null;
+
+    // Cross-Tab Instant Sync (Works immediately with 0ms latency across browser tabs)
     const localBroadcastChannel = (typeof window.BroadcastChannel !== 'undefined') 
-      ? new BroadcastChannel(`printocards_bc_${(factorySyncChannel || DEFAULT_FACTORY_PASS).toUpperCase()}`) 
+      ? new BroadcastChannel(`printo_bc_${(factorySyncChannel || DEFAULT_FACTORY_PASS).toUpperCase()}`) 
       : null;
 
     if (localBroadcastChannel) {
@@ -1059,15 +1056,6 @@
         handleIncomingBroadcast(ev.data);
       };
     }
-
-    // High-Availability Multi-Server Public WSS Pool (Tested & Stable for Browsers & Mobile WebViews)
-    const BROKER_SERVERS = [
-      { host: 'broker.emqx.io', port: 8084, path: '/mqtt', ssl: true },
-      { host: 'broker.hivemq.com', port: 8884, path: '/mqtt', ssl: true },
-      { host: 'test.mosquitto.org', port: 8081, path: '/mqtt', ssl: true }
-    ];
-    let currentBrokerIndex = 0;
-    let reconnectTimeout = null;
 
     function getOrCreateUserId() {
       let id = safeGet('prod_user_id');
@@ -1338,136 +1326,98 @@
         closeModal('factoryLockModal');
       }
 
-      if (typeof Paho === 'undefined' || !Paho.MQTT) {
-        updateSyncBadge('offline', 'Realtime Library Missing');
-        return;
-      }
-
-      connectToActiveBroker();
+      connectToNativeWebSocket();
     }
 
-    function getSyncTopic() {
-      const channel = (factorySyncChannel || DEFAULT_FACTORY_PASS).toUpperCase();
-      return `printocards_factory_v26/${channel}`;
+    function getRoomChannelName() {
+      const channel = (factorySyncChannel || DEFAULT_FACTORY_PASS).toUpperCase().replace(/[^A-Z0-9_-]/g, '');
+      return `printo_factory_${channel}`;
     }
 
-    function connectToActiveBroker() {
-      clearTimeout(reconnectTimeout);
+    function connectToNativeWebSocket() {
+      clearTimeout(wsReconnectTimeout);
       updateSyncBadge('connecting', 'Connecting...');
-      
-      const server = BROKER_SERVERS[currentBrokerIndex];
-      const randomSuffix = Math.random().toString(36).substring(2, 8);
-      const clientId = `p_${currentUserId.replace(/[^a-zA-Z0-9]/g, '')}_${randomSuffix}`;
+
+      const room = getRoomChannelName();
+      const wsUrl = `wss://demo.piesocket.com/v3/${room}?api_key=${PIESOCKET_API_KEY}&notify_self=0`;
 
       try {
-        if (mqttClient) {
-          try { 
-            mqttClient.onConnectionLost = null;
-            mqttClient.onMessageArrived = null;
-            if (mqttClient.isConnected()) mqttClient.disconnect(); 
-          } catch(e){}
+        if (nativeWs) {
+          try { nativeWs.onclose = null; nativeWs.close(); } catch(e){}
         }
 
-        mqttClient = new Paho.MQTT.Client(server.host, Number(server.port), server.path, clientId);
+        nativeWs = new WebSocket(wsUrl);
 
-        mqttClient.onConnectionLost = (responseObject) => {
-          isConnectedToCloud = false;
-          clearInterval(heartbeatTimer);
-          updateSyncBadge('offline', 'Reconnecting...');
-          // Cycle to the next broker server in the list upon disconnect
-          currentBrokerIndex = (currentBrokerIndex + 1) % BROKER_SERVERS.length;
-          clearTimeout(reconnectTimeout);
-          reconnectTimeout = setTimeout(connectToActiveBroker, 2500);
+        nativeWs.onopen = function() {
+          updateSyncBadge('connected', 'Live Cloud Sync');
+          
+          // Request fresh state from any active peer on connection
+          broadcastMessage({
+            type: 'STATE_REQUEST',
+            sender: currentUserId
+          });
+
+          // Keep connection alive with silent ping
+          clearInterval(wsHeartbeat);
+          wsHeartbeat = setInterval(() => {
+            if (nativeWs && nativeWs.readyState === WebSocket.OPEN) {
+              nativeWs.send(JSON.stringify({ type: 'PING', sender: currentUserId }));
+            }
+          }, 20000);
         };
 
-        mqttClient.onMessageArrived = (message) => {
+        nativeWs.onmessage = function(event) {
           try {
-            const rawPayload = message.payloadString;
-            const data = JSON.parse(rawPayload);
-            // Strict filter: Ignore self messages to avoid duplicate processing loops
-            if (!data || data.sender === currentUserId) return;
+            if (!event.data) return;
+            const data = JSON.parse(event.data);
+            if (!data || data.sender === currentUserId || data.type === 'PING') return;
             handleIncomingBroadcast(data);
-          } catch (e) {}
+          } catch(err) {}
         };
 
-        const connectOptions = {
-          timeout: 6,
-          useSSL: server.ssl,
-          cleanSession: true,
-          keepAliveInterval: 30,
-          onSuccess: () => {
-            isConnectedToCloud = true;
-            updateSyncBadge('connected', 'Live Cloud Sync');
-            
-            const topic = getSyncTopic();
-            mqttClient.subscribe(topic, { 
-              qos: 1, 
-              onSuccess: () => {
-                // Instantly request latest state from connected peers
-                broadcastMessage({
-                  type: 'STATE_REQUEST',
-                  sender: currentUserId
-                });
-              }
-            });
-
-            // Heartbeat to prevent mobile browser sockets from going dormant
-            clearInterval(heartbeatTimer);
-            heartbeatTimer = setInterval(() => {
-              if (mqttClient && mqttClient.isConnected()) {
-                broadcastMessage({ type: 'HEARTBEAT', sender: currentUserId });
-              }
-            }, 25000);
-          },
-          onFailure: (err) => {
-            isConnectedToCloud = false;
-            updateSyncBadge('offline', 'Retrying...');
-            currentBrokerIndex = (currentBrokerIndex + 1) % BROKER_SERVERS.length;
-            clearTimeout(reconnectTimeout);
-            reconnectTimeout = setTimeout(connectToActiveBroker, 2000);
-          }
+        nativeWs.onerror = function() {
+          updateSyncBadge('offline', 'Retrying...');
         };
 
-        mqttClient.connect(connectOptions);
+        nativeWs.onclose = function() {
+          clearInterval(wsHeartbeat);
+          updateSyncBadge('offline', 'Reconnecting...');
+          clearTimeout(wsReconnectTimeout);
+          wsReconnectTimeout = setTimeout(connectToNativeWebSocket, 2000);
+        };
 
       } catch (err) {
         updateSyncBadge('offline', 'Offline Mode');
-        currentBrokerIndex = (currentBrokerIndex + 1) % BROKER_SERVERS.length;
-        clearTimeout(reconnectTimeout);
-        reconnectTimeout = setTimeout(connectToActiveBroker, 3000);
+        clearTimeout(wsReconnectTimeout);
+        wsReconnectTimeout = setTimeout(connectToNativeWebSocket, 3000);
       }
     }
 
     window.manualForceReconnect = function() {
       showToast('Reconnecting cloud sync...', 'info');
-      currentBrokerIndex = 0;
-      connectToActiveBroker();
+      connectToNativeWebSocket();
     };
 
     function broadcastMessage(payloadObj) {
-      const topic = getSyncTopic();
       const rawString = JSON.stringify(payloadObj);
 
-      // 1. Broadcast locally across same-origin tabs instantly
+      // 1. Instant local cross-tab sync
       if (localBroadcastChannel) {
         try { localBroadcastChannel.postMessage(payloadObj); } catch(e){}
       }
 
-      // 2. Broadcast via Cloud WebSocket
-      if (mqttClient && mqttClient.isConnected()) {
+      // 2. High-speed cloud WebSocket broadcast
+      if (nativeWs && nativeWs.readyState === WebSocket.OPEN) {
         try {
-          const msg = new Paho.MQTT.Message(rawString);
-          msg.destinationName = topic;
-          msg.qos = 1;
-          mqttClient.send(msg);
-        } catch (e) {}
+          nativeWs.send(rawString);
+        } catch(e) {}
       }
     }
 
     function handleIncomingBroadcast(data) {
       if (!data) return;
 
-      // 1. ATOMIC STAGE UPDATE (Immediate live response on other devices)
+      // 1. ATOMIC STAGE UPDATE (Instant update on all devices)
       if (data.type === 'STAGE_TOGGLE') {
         const job = jobs.find(j => j.id === data.jobId);
         if (job) {
@@ -1492,7 +1442,6 @@
             : (data.stageId === 'delivered' ? 'Delivered' : data.stageId);
           showToast(`⚡ Live Update: "${job.title}" ➔ ${stageName} (${job.updatedByName})`, 'info');
         } else {
-          // If the job isn't found locally yet, ask for state replication
           broadcastMessage({ type: 'STATE_REQUEST', sender: currentUserId });
         }
       } 
@@ -1532,8 +1481,7 @@
       // 4. PEER STATE REPLICATION
       else if (data.type === 'STATE_REQUEST') {
         if (jobs.length > 0 || deletedJobIds.length > 0) {
-          // Send lightweight copy without full-size proofs over socket to prevent packet drop
-          const shareableJobs = jobs.slice(0, 35).map(j => ({
+          const shareableJobs = jobs.slice(0, 30).map(j => ({
             ...j,
             proofImage: j.proofImage ? j.proofImage.slice(0, 400) + '...' : null
           }));
@@ -1906,25 +1854,23 @@
       if (stageId === 'courier_dispatched') {
         const isCurrentlyDone = job.stages['courier_dispatched'] === true;
         
-        // If not yet dispatched, open the Dispatch Entry Modal directly
         if (!isCurrentlyDone) {
           openDispatchStageModal(jobId);
           return;
         } else {
-          // If already dispatched, open view/edit modal
           openViewDispatchModal(jobId);
           return;
         }
       }
 
-      // Normal stage toggle for other production stages
+      // Normal stage toggle
       const newStatus = !job.stages[stageId];
       job.stages[stageId] = newStatus;
       job.updatedAt = Date.now();
       job.updatedBy = currentUserId;
       job.updatedByName = currentUserSession.name;
 
-      // 1. Optimistic instant visual update
+      // Optimistic instant visual update
       const btn = document.getElementById(`btn-${jobId}-${stageId}`);
       const check = document.getElementById(`check-${jobId}-${stageId}`);
       if (btn) {
@@ -1935,11 +1881,9 @@
         check.innerText = newStatus ? '✓' : '○';
       }
 
-      // 2. Persist locally and refresh the card metadata
       saveLocalJobs();
       updateJobCardElement(jobId);
 
-      // 3. Emit MQTT broadcast to update all connected devices
       broadcastMessage({
         type: 'STAGE_TOGGLE',
         sender: currentUserId,
@@ -1965,7 +1909,6 @@
 
       clearVehicleImage();
 
-      // Populate existing values if editing
       if (job.dispatchData) {
         const d = job.dispatchData;
         setDispatchInputMode(d.type || 'courier');
@@ -1992,7 +1935,6 @@
         setDispatchInputMode('courier');
         document.getElementById('dispatchTargetJobId').value = jobId;
         
-        // Default ETA: Current time + 2 hours in local ISO format
         const defaultArrival = new Date(Date.now() + 2 * 60 * 60 * 1000);
         const localIso = new Date(defaultArrival.getTime() - defaultArrival.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
         document.getElementById('dispatchArrivalTime').value = localIso;
@@ -2132,7 +2074,6 @@
       updateJobCardElement(job.id);
       closeDispatchStageModal();
 
-      // Realtime MQTT Broadcast with dispatch information
       broadcastMessage({
         type: 'STAGE_TOGGLE',
         sender: currentUserId,
@@ -2445,8 +2386,8 @@
       closeChannelModal();
       openModal('factoryLockModal');
       document.getElementById('initialAccessCodeInput').value = '';
-      if (mqttClient) {
-        try { mqttClient.end(true); } catch(e){}
+      if (nativeWs) {
+        try { nativeWs.close(); } catch(e){}
       }
       updateSyncBadge('offline', 'App Locked');
       updateChannelLabelDisplay();
@@ -2534,7 +2475,7 @@
         badge.style.background = 'rgba(16, 185, 129, 0.15)';
         badge.style.color = '#34d399';
         badge.style.borderColor = 'rgba(16, 185, 129, 0.3)';
-        text.innerText = customText || 'Cloud Connected';
+        text.innerText = customText || 'Live Cloud Sync';
         if (dot) dot.style.background = '#10b981';
       } else if (status === 'connecting') {
         badge.style.background = 'rgba(245, 158, 11, 0.15)';
@@ -2725,13 +2666,13 @@
 
     window.addEventListener('online', () => {
       showToast('Network restored. Reconnecting cloud...', 'info');
-      connectToActiveBroker();
+      connectToNativeWebSocket();
     });
 
     window.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        if (!mqttClient || !mqttClient.isConnected()) {
-          connectToActiveBroker();
+        if (!nativeWs || nativeWs.readyState !== WebSocket.OPEN) {
+          connectToNativeWebSocket();
         } else {
           broadcastMessage({
             type: 'STATE_REQUEST',
@@ -2741,7 +2682,6 @@
       }
     });
 
-    // Cross-tab storage event sync for instant local synchronization
     window.addEventListener('storage', (e) => {
       if (e.key === getStorageKey()) {
         jobs = loadLocalJobs();
