@@ -10,8 +10,8 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>PrintoCards Production & Dispatch Tracker</title>
   
-  <!-- Rock-Solid Stable MQTT WebSocket Realtime Sync Engine (v5.3.5) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.5/mqtt.min.js"></script>
+  <!-- Rock-Solid Dual-Protocol Realtime Engine: Paho MQTT WebSocket + Automatic Server Rotation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
   <style>
     *, *::before, *::after {
@@ -1045,9 +1045,29 @@
     let pendingDeleteId = null;
     let mqttClient = null;
     let isConnectedToCloud = false;
-    let activeBrokerUrl = PRIMARY_BROKER;
     let heartbeatTimer = null;
     let currentDispatchJobId = null;
+
+    // Cross-Tab Instant Sync Channel (Works instantly across tabs/windows on the same machine)
+    const localBroadcastChannel = (typeof window.BroadcastChannel !== 'undefined') 
+      ? new BroadcastChannel(`printocards_bc_${(factorySyncChannel || DEFAULT_FACTORY_PASS).toUpperCase()}`) 
+      : null;
+
+    if (localBroadcastChannel) {
+      localBroadcastChannel.onmessage = function(ev) {
+        if (!ev || !ev.data || ev.data.sender === currentUserId) return;
+        handleIncomingBroadcast(ev.data);
+      };
+    }
+
+    // High-Availability Multi-Server Public WSS Pool (Tested & Stable for Browsers & Mobile WebViews)
+    const BROKER_SERVERS = [
+      { host: 'broker.emqx.io', port: 8084, path: '/mqtt', ssl: true },
+      { host: 'broker.hivemq.com', port: 8884, path: '/mqtt', ssl: true },
+      { host: 'test.mosquitto.org', port: 8081, path: '/mqtt', ssl: true }
+    ];
+    let currentBrokerIndex = 0;
+    let reconnectTimeout = null;
 
     function getOrCreateUserId() {
       let id = safeGet('prod_user_id');
@@ -1318,8 +1338,8 @@
         closeModal('factoryLockModal');
       }
 
-      if (typeof mqtt === 'undefined') {
-        updateSyncBadge('offline', 'Offline (MQTT script missing)');
+      if (typeof Paho === 'undefined' || !Paho.MQTT) {
+        updateSyncBadge('offline', 'Realtime Library Missing');
         return;
       }
 
@@ -1328,90 +1348,118 @@
 
     function getSyncTopic() {
       const channel = (factorySyncChannel || DEFAULT_FACTORY_PASS).toUpperCase();
-      return `printocards_factory_sync_v24/${channel}`;
+      return `printocards_factory_v26/${channel}`;
     }
 
     function connectToActiveBroker() {
-      updateSyncBadge('connecting', 'Connecting to Cloud...');
-      const clientId = 'printo_' + currentUserId + '_' + Math.random().toString(16).substring(2, 8);
+      clearTimeout(reconnectTimeout);
+      updateSyncBadge('connecting', 'Connecting...');
+      
+      const server = BROKER_SERVERS[currentBrokerIndex];
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const clientId = `p_${currentUserId.replace(/[^a-zA-Z0-9]/g, '')}_${randomSuffix}`;
 
       try {
         if (mqttClient) {
-          try { mqttClient.end(true); } catch(e){}
+          try { 
+            mqttClient.onConnectionLost = null;
+            mqttClient.onMessageArrived = null;
+            if (mqttClient.isConnected()) mqttClient.disconnect(); 
+          } catch(e){}
         }
 
-        mqttClient = mqtt.connect(activeBrokerUrl, {
-          clientId: clientId,
-          clean: true,
-          connectTimeout: 7000,
-          reconnectPeriod: 2500,
-          keepalive: 30
-        });
+        mqttClient = new Paho.MQTT.Client(server.host, Number(server.port), server.path, clientId);
 
-        const topic = getSyncTopic();
-
-        mqttClient.on('connect', () => {
-          isConnectedToCloud = true;
-          updateSyncBadge('connected', 'Live Cloud Sync');
-          
-          mqttClient.subscribe(topic, { qos: 1 }, (err) => {
-            if (!err) {
-              // Immediately announce presence and request peer status
-              broadcastMessage({
-                type: 'STATE_REQUEST',
-                sender: currentUserId
-              });
-            }
-          });
-
-          // Setup periodic heartbeat ping to prevent mobile background socket suspension
+        mqttClient.onConnectionLost = (responseObject) => {
+          isConnectedToCloud = false;
           clearInterval(heartbeatTimer);
-          heartbeatTimer = setInterval(() => {
-            if (mqttClient && mqttClient.connected) {
-              broadcastMessage({ type: 'HEARTBEAT', sender: currentUserId });
-            }
-          }, 25000);
-        });
+          updateSyncBadge('offline', 'Reconnecting...');
+          // Cycle to the next broker server in the list upon disconnect
+          currentBrokerIndex = (currentBrokerIndex + 1) % BROKER_SERVERS.length;
+          clearTimeout(reconnectTimeout);
+          reconnectTimeout = setTimeout(connectToActiveBroker, 2500);
+        };
 
-        mqttClient.on('message', (t, payload) => {
+        mqttClient.onMessageArrived = (message) => {
           try {
-            const data = JSON.parse(payload.toString());
-            // STRICT FILTER: Discard self-sent messages to avoid echo loop & UI race-conditions
+            const rawPayload = message.payloadString;
+            const data = JSON.parse(rawPayload);
+            // Strict filter: Ignore self messages to avoid duplicate processing loops
             if (!data || data.sender === currentUserId) return;
             handleIncomingBroadcast(data);
           } catch (e) {}
-        });
+        };
 
-        mqttClient.on('error', () => {
-          updateSyncBadge('offline', 'Retrying Cloud...');
-          // Switch to backup broker if primary fails
-          if (activeBrokerUrl === PRIMARY_BROKER) {
-            activeBrokerUrl = BACKUP_BROKER;
-          }
-        });
+        const connectOptions = {
+          timeout: 6,
+          useSSL: server.ssl,
+          cleanSession: true,
+          keepAliveInterval: 30,
+          onSuccess: () => {
+            isConnectedToCloud = true;
+            updateSyncBadge('connected', 'Live Cloud Sync');
+            
+            const topic = getSyncTopic();
+            mqttClient.subscribe(topic, { 
+              qos: 1, 
+              onSuccess: () => {
+                // Instantly request latest state from connected peers
+                broadcastMessage({
+                  type: 'STATE_REQUEST',
+                  sender: currentUserId
+                });
+              }
+            });
 
-        mqttClient.on('close', () => {
-          if (isConnectedToCloud) {
+            // Heartbeat to prevent mobile browser sockets from going dormant
+            clearInterval(heartbeatTimer);
+            heartbeatTimer = setInterval(() => {
+              if (mqttClient && mqttClient.isConnected()) {
+                broadcastMessage({ type: 'HEARTBEAT', sender: currentUserId });
+              }
+            }, 25000);
+          },
+          onFailure: (err) => {
             isConnectedToCloud = false;
-            updateSyncBadge('offline', 'Reconnecting...');
+            updateSyncBadge('offline', 'Retrying...');
+            currentBrokerIndex = (currentBrokerIndex + 1) % BROKER_SERVERS.length;
+            clearTimeout(reconnectTimeout);
+            reconnectTimeout = setTimeout(connectToActiveBroker, 2000);
           }
-        });
+        };
+
+        mqttClient.connect(connectOptions);
 
       } catch (err) {
         updateSyncBadge('offline', 'Offline Mode');
+        currentBrokerIndex = (currentBrokerIndex + 1) % BROKER_SERVERS.length;
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = setTimeout(connectToActiveBroker, 3000);
       }
     }
 
     window.manualForceReconnect = function() {
-      showToast('Reconnecting live cloud...', 'info');
+      showToast('Reconnecting cloud sync...', 'info');
+      currentBrokerIndex = 0;
       connectToActiveBroker();
     };
 
     function broadcastMessage(payloadObj) {
-      if (mqttClient && mqttClient.connected) {
+      const topic = getSyncTopic();
+      const rawString = JSON.stringify(payloadObj);
+
+      // 1. Broadcast locally across same-origin tabs instantly
+      if (localBroadcastChannel) {
+        try { localBroadcastChannel.postMessage(payloadObj); } catch(e){}
+      }
+
+      // 2. Broadcast via Cloud WebSocket
+      if (mqttClient && mqttClient.isConnected()) {
         try {
-          const topic = getSyncTopic();
-          mqttClient.publish(topic, JSON.stringify(payloadObj), { qos: 1, retain: false });
+          const msg = new Paho.MQTT.Message(rawString);
+          msg.destinationName = topic;
+          msg.qos = 1;
+          mqttClient.send(msg);
         } catch (e) {}
       }
     }
@@ -1419,7 +1467,7 @@
     function handleIncomingBroadcast(data) {
       if (!data) return;
 
-      // 1. ATOMIC STAGE UPDATE FROM OTHER DEVICES
+      // 1. ATOMIC STAGE UPDATE (Immediate live response on other devices)
       if (data.type === 'STAGE_TOGGLE') {
         const job = jobs.find(j => j.id === data.jobId);
         if (job) {
@@ -1439,8 +1487,13 @@
           saveLocalJobs();
           updateJobCardElement(job.id);
           
-          const stageName = data.stageId === 'courier_dispatched' ? 'Courier Dispatched' : (data.stageId === 'delivered' ? 'Delivered' : data.stageId);
+          const stageName = data.stageId === 'courier_dispatched' 
+            ? 'Courier Dispatched' 
+            : (data.stageId === 'delivered' ? 'Delivered' : data.stageId);
           showToast(`⚡ Live Update: "${job.title}" ➔ ${stageName} (${job.updatedByName})`, 'info');
+        } else {
+          // If the job isn't found locally yet, ask for state replication
+          broadcastMessage({ type: 'STATE_REQUEST', sender: currentUserId });
         }
       } 
       // 2. NEW JOB CREATED
@@ -1476,10 +1529,14 @@
           }
         }
       } 
-      // 4. PEER STATE REPLICATION (OPTIMIZED PAYLOAD)
+      // 4. PEER STATE REPLICATION
       else if (data.type === 'STATE_REQUEST') {
         if (jobs.length > 0 || deletedJobIds.length > 0) {
-          const shareableJobs = jobs.slice(0, 30).map(j => ({ ...j }));
+          // Send lightweight copy without full-size proofs over socket to prevent packet drop
+          const shareableJobs = jobs.slice(0, 35).map(j => ({
+            ...j,
+            proofImage: j.proofImage ? j.proofImage.slice(0, 400) + '...' : null
+          }));
           broadcastMessage({
             type: 'STATE_SHARE',
             sender: currentUserId,
@@ -2673,15 +2730,22 @@
 
     window.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        if (!mqttClient || !mqttClient.connected) {
+        if (!mqttClient || !mqttClient.isConnected()) {
           connectToActiveBroker();
         } else {
-          // Immediately poll peers when app tab/window becomes active again
           broadcastMessage({
             type: 'STATE_REQUEST',
             sender: currentUserId
           });
         }
+      }
+    });
+
+    // Cross-tab storage event sync for instant local synchronization
+    window.addEventListener('storage', (e) => {
+      if (e.key === getStorageKey()) {
+        jobs = loadLocalJobs();
+        renderJobs();
       }
     });
 
