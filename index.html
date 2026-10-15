@@ -10,11 +10,10 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>PrintoCards Production & Dispatch Tracker</title>
   
-  <!-- High-Speed MQTT WebSocket Realtime Sync Engine -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.16.0/mqtt.min.js"></script>
+  <!-- Rock-Solid Stable MQTT WebSocket Realtime Sync Engine (v5.3.5) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.5/mqtt.min.js"></script>
 
   <style>
-    /* PURE NATIVE CSS - ZERO EXTERNAL CSS DEPENDENCY */
     *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
@@ -355,7 +354,7 @@
       border: 1px solid #1e293b;
       color: #94a3b8;
       cursor: pointer;
-      transition: background-color 0.1s ease, border-color 0.1s ease, color 0.1s ease;
+      transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
       user-select: none;
     }
 
@@ -370,10 +369,16 @@
       font-weight: 700;
     }
 
+    .stage-btn.dispatch-btn {
+      border: 1px dashed rgba(14, 165, 233, 0.4);
+      background: rgba(14, 165, 233, 0.05);
+    }
+
     .stage-btn.dispatch-btn.done {
-      background: rgba(14, 165, 233, 0.18);
-      border-color: rgba(14, 165, 233, 0.6);
+      background: rgba(14, 165, 233, 0.22);
+      border: 1px solid rgba(14, 165, 233, 0.7);
       color: #38bdf8;
+      font-weight: 700;
     }
 
     .stage-btn.delivered-btn.done {
@@ -397,6 +402,44 @@
 
     .form-input:focus {
       border-color: #10b981;
+    }
+
+    .dispatch-mode-card {
+      background: #0b0f19;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 10px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.15s ease;
+    }
+
+    .dispatch-mode-card.selected {
+      border-color: #38bdf8;
+      background: rgba(14, 165, 233, 0.12);
+    }
+
+    .dispatch-info-card {
+      margin-top: 8px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      background: rgba(14, 165, 233, 0.1);
+      border: 1px solid rgba(14, 165, 233, 0.3);
+      color: #7dd3fc;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .dispatch-info-card:hover {
+      background: rgba(14, 165, 233, 0.18);
+      border-color: #38bdf8;
     }
 
     #toast {
@@ -437,7 +480,7 @@
         <div>
           <div style="display: flex; align-items: center; gap: 8px;">
             <h1 class="brand-title">PRINTO<span>CARDS</span></h1>
-            <span id="syncBadge" onclick="manualForceReconnect()" style="cursor: pointer; font-size: 11px; padding: 3px 8px; border-radius: 999px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Click to reconnect cloud sync">
+            <span id="syncBadge" onclick="manualForceReconnect()" style="cursor: pointer; font-size: 11px; padding: 3px 8px; border-radius: 999px; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); display: inline-flex; align-items: center; gap: 5px;" title="Click to manually reconnect sync">
               <span id="syncDot" style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#f59e0b;"></span>
               <span id="syncBadgeText">Connecting...</span>
             </span>
@@ -546,7 +589,156 @@
     </div>
   </main>
 
-  <!-- 1. Factory Lock Modal -->
+  <div id="dispatchStageModal" class="app-modal">
+    <div class="modal-card" style="max-width: 430px; display: flex; flex-direction: column;">
+      <div style="padding: 14px 18px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(15, 23, 42, 1));">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 18px;">🚚</span>
+          <div>
+            <h3 style="font-size: 14px; font-weight: 800; color: #38bdf8;">Order Dispatch Stage</h3>
+            <div id="dispatchModalSubtitle" style="font-size: 11px; color: #94a3b8;">Enter Courier or Direct Vehicle info</div>
+          </div>
+        </div>
+        <button type="button" onclick="closeDispatchStageModal()" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer;">✕</button>
+      </div>
+
+      <form id="dispatchStageForm" onsubmit="handleDispatchStageSubmit(event)" style="padding: 16px; display: flex; flex-direction: column; gap: 12px; max-height: 80vh; overflow-y: auto;">
+        <input type="hidden" id="dispatchTargetJobId">
+
+        <div style="background: #0b0f19; padding: 10px 12px; border-radius: 10px; border: 1px solid #1e293b; font-size: 11px;">
+          <div style="color: #94a3b8;">Order: <span id="dispatchJobTitleDisplay" style="color: #ffffff; font-weight: bold;"></span></div>
+          <div style="color: #64748b; font-size: 10px; margin-top: 2px;">Mark this order as dispatched by entering shipping information.</div>
+        </div>
+
+        <div>
+          <label style="display:block; font-size:11px; font-weight:700; color:#cbd5e1; margin-bottom:6px;">Select Dispatch Mode *</label>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div id="modeCardCourier" class="dispatch-mode-card selected" onclick="setDispatchInputMode('courier')">
+              <input type="radio" name="dispatchInputMode" id="radioModeCourier" value="courier" checked style="accent-color: #38bdf8;">
+              <div>
+                <div style="font-size: 12px; font-weight: 700; color: #ffffff;">📦 Courier</div>
+                <div style="font-size: 10px; color: #94a3b8;">DTDC / Post / Cargo</div>
+              </div>
+            </div>
+
+            <div id="modeCardVehicle" class="dispatch-mode-card" onclick="setDispatchInputMode('vehicle')">
+              <input type="radio" name="dispatchInputMode" id="radioModeVehicle" value="vehicle" style="accent-color: #38bdf8;">
+              <div>
+                <div style="font-size: 12px; font-weight: 700; color: #ffffff;">🚐 Vehicle</div>
+                <div style="font-size: 10px; color: #94a3b8;">Direct / Company Van</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 1. Courier Service Fields -->
+        <div id="courierInputsGroup" style="display: flex; flex-direction: column; gap: 8px;">
+          <div>
+            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Courier Service Partner *</label>
+            <select id="dispatchCourierPartner" class="form-input" style="background:#0b0f19;">
+              <option value="DTDC Express">DTDC Express</option>
+              <option value="India Post / Speed Post">India Post / Speed Post</option>
+              <option value="ST Courier">ST Courier</option>
+              <option value="The Professional Couriers">The Professional Couriers</option>
+              <option value="Trackon Courier">Trackon Courier</option>
+              <option value="KSRTC / Kallada Cargo">KSRTC / Kallada Cargo</option>
+              <option value="Other Courier / Transport">Other Transport Partner</option>
+            </select>
+          </div>
+
+          <div>
+            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">AWB / Tracking Number *</label>
+            <input type="text" id="dispatchTrackingNo" placeholder="e.g. D12345678IN" class="form-input" style="font-family: monospace; text-transform: uppercase;">
+          </div>
+
+          <div>
+            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Courier Tracking Link (Optional)</label>
+            <input type="url" id="dispatchTrackingUrl" placeholder="https://www.dtdc.in/tracking..." class="form-input">
+          </div>
+        </div>
+
+        <!-- 2. Direct Delivery Vehicle Fields -->
+        <div id="vehicleInputsGroup" style="display: none; flex-direction: column; gap: 8px;">
+          <div>
+            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Vehicle Registration Number *</label>
+            <input type="text" id="dispatchVehicleNo" placeholder="e.g. KL-11-BV-4521" class="form-input" style="font-family: monospace; text-transform: uppercase;">
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px;">
+            <div>
+              <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Driver Name *</label>
+              <input type="text" id="dispatchDriverName" placeholder="Driver Name" class="form-input">
+            </div>
+            <div>
+              <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Driver Phone</label>
+              <input type="tel" id="dispatchDriverPhone" placeholder="9847XXXXXX" class="form-input">
+            </div>
+          </div>
+
+          <div>
+            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Estimated Arrival Time (ETA) *</label>
+            <input type="datetime-local" id="dispatchArrivalTime" class="form-input" style="cursor: pointer;">
+          </div>
+
+          <div>
+            <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Vehicle / Loading Photo (Optional)</label>
+            <div style="border: 2px dashed #334155; border-radius: 10px; padding: 10px; text-align: center; position: relative; background: #0b0f19;">
+              <input type="file" id="vehicleImageInput" accept="image/*" onchange="handleVehicleImageSelection(event)" style="position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;">
+              <div id="vehicleUploadPlaceholder">
+                <span style="font-size: 18px;">🚐 📷</span>
+                <div style="font-size: 11px; color: #cbd5e1; margin-top: 2px;">Upload Vehicle / Parcel Photo</div>
+              </div>
+              <div id="vehicleImagePreviewContainer" style="display: none; align-items: center; justify-content: center; gap: 10px;">
+                <img id="vehicleImagePreview" src="" alt="Vehicle Preview" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px; border: 1.5px solid #38bdf8;">
+                <button type="button" onclick="clearVehicleImage(event)" style="background: none; border: none; color: #f43f5e; font-size: 11px; text-decoration: underline; cursor: pointer;">Remove Photo</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Dispatch Remarks (Optional)</label>
+          <input type="text" id="dispatchRemarks" placeholder="e.g. 2 boxes packed with seal" class="form-input">
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #1e293b; padding-top: 12px; margin-top: 4px;">
+          <button type="button" onclick="closeDispatchStageModal()" class="btn btn-dark">Cancel</button>
+          <button type="submit" class="btn" style="background: linear-gradient(135deg, #0284c7, #0369a1); color: #ffffff; font-weight: 700;">
+            ✓ Save & Mark Dispatched
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="viewDispatchDetailsModal" class="app-modal">
+    <div class="modal-card" style="max-width: 380px; padding: 20px;">
+      <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 10px; margin-bottom: 12px;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span style="font-size: 18px;">🚚</span>
+          <h4 id="viewDispatchHeader" style="font-size: 14px; font-weight: 800; color: #38bdf8;">Dispatch Details</h4>
+        </div>
+        <button type="button" onclick="closeViewDispatchModal()" style="background: none; border: none; color: #94a3b8; font-size: 18px; cursor: pointer;">✕</button>
+      </div>
+
+      <div id="viewDispatchBody" style="display: flex; flex-direction: column; gap: 10px; font-size: 12px;"></div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 16px; border-top: 1px solid #1e293b; padding-top: 12px;">
+        <button type="button" id="copyWhatsAppDispatchBtn" class="btn btn-emerald" style="width: 100%; justify-content: center;">
+          📱 Copy WhatsApp Notification
+        </button>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" id="editDispatchDetailsBtn" class="btn btn-dark" style="flex: 1; justify-content: center;">
+            ✏ Edit Details
+          </button>
+          <button type="button" onclick="closeViewDispatchModal()" class="btn btn-dark" style="flex: 1; justify-content: center;">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div id="factoryLockModal" class="app-modal">
     <div class="modal-card" style="padding: 24px; text-align: center; max-width: 360px;">
       <div style="width: 50px; height: 50px; border-radius: 14px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981; display:flex; align-items:center; justify-content:center; font-size: 24px; margin: 0 auto 14px auto;">
@@ -578,14 +770,13 @@
     </div>
   </div>
 
-  <!-- 2. Staff Login Modal -->
   <div id="authModal" class="app-modal">
     <div class="modal-card" style="padding: 24px; text-align: center; max-width: 340px;">
       <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #10b981; display:flex; align-items:center; justify-content:center; font-size: 22px; margin: 0 auto 12px auto;">
         👤
       </div>
       <h3 style="font-size: 16px; font-weight: 800; color: #ffffff;">Staff Account Login</h3>
-      <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 14px 0;">Sign in to make production updates.</p>
+      <p style="font-size: 11px; color: #94a3b8; margin: 4px 0 14px 0;">Sign in to update production & dispatch stages.</p>
 
       <form onsubmit="handleAuthLoginSubmit(event)" style="text-align: left;">
         <div style="margin-bottom: 10px;">
@@ -594,7 +785,7 @@
             type="text" 
             id="authUsernameInput" 
             required 
-            placeholder="e.g. name / position" 
+            placeholder="e.g. asif / supervisor" 
             class="form-input"
             autocomplete="username"
             style="text-transform: lowercase;"
@@ -622,7 +813,6 @@
     </div>
   </div>
 
-  <!-- 3. Manage Accounts Modal -->
   <div id="manageUsersModal" class="app-modal">
     <div class="modal-card" style="padding: 20px; max-width: 380px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 8px;">
@@ -651,11 +841,10 @@
     </div>
   </div>
 
-  <!-- 4. Create New Job Modal -->
   <div id="newJobModal" class="app-modal">
     <div class="modal-card" style="max-height: 92vh; display: flex; flex-direction: column;">
       <div style="padding: 14px 18px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between;">
-        <h3 style="font-size: 14px; font-weight: 800; color: #ffffff;">📝 New Production & Dispatch Order</h3>
+        <h3 style="font-size: 14px; font-weight: 800; color: #ffffff;">📝 New Production Order</h3>
         <button type="button" onclick="closeNewJobModal()" style="background: none; border: none; color: #94a3b8; font-size: 16px; cursor: pointer;">✕</button>
       </div>
 
@@ -703,9 +892,11 @@
           </div>
         </div>
 
-        <div>
-          <label style="display:block; font-size:11px; font-weight:600; color:#cbd5e1; margin-bottom:4px;">Courier & Tracking Info</label>
-          <input type="text" id="jobTracking" placeholder="e.g. DTDC: TRK-987654" class="form-input">
+        <div style="padding: 10px; border-radius: 10px; background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(14, 165, 233, 0.25); display: flex; align-items: center; gap: 8px;">
+          <span style="font-size: 18px;">🚚</span>
+          <div style="font-size: 11px; color: #7dd3fc; line-height: 1.3;">
+            <strong>Dispatch Information:</strong> Courier tracking or vehicle details are entered when clicking the <em>Courier Dispatched</em> stage.
+          </div>
         </div>
 
         <div>
@@ -736,7 +927,6 @@
     </div>
   </div>
 
-  <!-- 5. Channel Settings Modal -->
   <div id="channelSettingsModal" class="app-modal">
     <div class="modal-card" style="padding: 20px; max-width: 340px;">
       <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">⚙ Channel Settings</h4>
@@ -757,7 +947,6 @@
     </div>
   </div>
 
-  <!-- 6. Delete Confirm Modal -->
   <div id="deleteConfirmModal" class="app-modal">
     <div class="modal-card" style="padding: 20px; text-align: center; max-width: 300px;">
       <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.4); color: #f43f5e; display:flex; align-items:center; justify-content:center; font-size: 20px; margin: 0 auto 10px auto;">
@@ -773,7 +962,6 @@
     </div>
   </div>
 
-  <!-- 7. Lightbox Modal -->
   <div id="imageLightboxModal" class="app-modal" onclick="closeLightbox()">
     <div style="position: relative; max-width: 90vw; max-height: 85vh;" onclick="event.stopPropagation()">
       <button type="button" onclick="closeLightbox()" style="position: absolute; top: -35px; right: 0; background: #1e293b; color: #ffffff; border: none; padding: 4px 10px; border-radius: 20px; font-size: 11px; cursor: pointer;">✕ Close</button>
@@ -811,7 +999,9 @@
       { id: 'delivered',          name: 'Delivered / Received',icon: '📬', isDelivered: true }
     ];
 
+    // High-Reliability Dual Public Brokers (Primary with Automatic Failover)
     const PRIMARY_BROKER = 'wss://broker.emqx.io:8084/mqtt';
+    const BACKUP_BROKER  = 'wss://broker.hivemq.com:8884/mqtt';
 
     const DEFAULT_STAFF_ACCOUNTS = [
       { username: 'asif',       pin: '2026', name: 'Mhd Asif',        role: 'admin' },
@@ -851,9 +1041,13 @@
     let jobs = [];
     let deletedJobIds = loadDeletedIds();
     let tempNewJobImage = null;
+    let tempVehicleImage = null;
     let pendingDeleteId = null;
     let mqttClient = null;
     let isConnectedToCloud = false;
+    let activeBrokerUrl = PRIMARY_BROKER;
+    let heartbeatTimer = null;
+    let currentDispatchJobId = null;
 
     function getOrCreateUserId() {
       let id = safeGet('prod_user_id');
@@ -1125,7 +1319,7 @@
       }
 
       if (typeof mqtt === 'undefined') {
-        updateSyncBadge('offline', 'Offline');
+        updateSyncBadge('offline', 'Offline (MQTT script missing)');
         return;
       }
 
@@ -1139,19 +1333,19 @@
 
     function connectToActiveBroker() {
       updateSyncBadge('connecting', 'Connecting to Cloud...');
-      const clientId = 'printo_' + currentUserId + '_' + Math.random().toString(16).substring(2, 6);
+      const clientId = 'printo_' + currentUserId + '_' + Math.random().toString(16).substring(2, 8);
 
       try {
         if (mqttClient) {
           try { mqttClient.end(true); } catch(e){}
         }
 
-        mqttClient = mqtt.connect(PRIMARY_BROKER, {
+        mqttClient = mqtt.connect(activeBrokerUrl, {
           clientId: clientId,
           clean: true,
-          connectTimeout: 8000,
-          reconnectPeriod: 3000,
-          keepalive: 20
+          connectTimeout: 7000,
+          reconnectPeriod: 2500,
+          keepalive: 30
         });
 
         const topic = getSyncTopic();
@@ -1159,12 +1353,24 @@
         mqttClient.on('connect', () => {
           isConnectedToCloud = true;
           updateSyncBadge('connected', 'Live Cloud Sync');
-          mqttClient.subscribe(topic, { qos: 1 });
           
-          broadcastMessage({
-            type: 'STATE_REQUEST',
-            sender: currentUserId
+          mqttClient.subscribe(topic, { qos: 1 }, (err) => {
+            if (!err) {
+              // Immediately announce presence and request peer status
+              broadcastMessage({
+                type: 'STATE_REQUEST',
+                sender: currentUserId
+              });
+            }
           });
+
+          // Setup periodic heartbeat ping to prevent mobile background socket suspension
+          clearInterval(heartbeatTimer);
+          heartbeatTimer = setInterval(() => {
+            if (mqttClient && mqttClient.connected) {
+              broadcastMessage({ type: 'HEARTBEAT', sender: currentUserId });
+            }
+          }, 25000);
         });
 
         mqttClient.on('message', (t, payload) => {
@@ -1177,7 +1383,11 @@
         });
 
         mqttClient.on('error', () => {
-          updateSyncBadge('offline', 'Retrying Connection...');
+          updateSyncBadge('offline', 'Retrying Cloud...');
+          // Switch to backup broker if primary fails
+          if (activeBrokerUrl === PRIMARY_BROKER) {
+            activeBrokerUrl = BACKUP_BROKER;
+          }
         });
 
         mqttClient.on('close', () => {
@@ -1218,9 +1428,15 @@
           job.updatedAt = data.updatedAt || Date.now();
           job.updatedBy = data.sender;
           job.updatedByName = data.updatedByName || 'Staff';
+
+          if (data.dispatchData !== undefined) {
+            job.dispatchData = data.dispatchData;
+          }
+          if (data.trackingInfo !== undefined) {
+            job.trackingInfo = data.trackingInfo;
+          }
+
           saveLocalJobs();
-          
-          // Targeted fast UI update: updates card directly without destroying whole screen
           updateJobCardElement(job.id);
           
           const stageName = data.stageId === 'courier_dispatched' ? 'Courier Dispatched' : (data.stageId === 'delivered' ? 'Delivered' : data.stageId);
@@ -1283,7 +1499,6 @@
       }
     }
 
-    // Deep merging stages so independent updates are preserved
     function mergeJobsLists(localList, remoteList) {
       const map = new Map();
       localList.forEach(j => {
@@ -1303,9 +1518,9 @@
           const rTime = rj.updatedAt || 0;
           const merged = (rTime >= lTime) ? { ...lj, ...rj } : { ...rj, ...lj };
           
-          // Deep merge stage statuses to prevent concurrent overwrite
           merged.stages = { ...(lj.stages || {}), ...(rj.stages || {}) };
           merged.proofImage = rj.proofImage || lj.proofImage || null;
+          merged.dispatchData = rj.dispatchData || lj.dispatchData || null;
           map.set(rj.id, merged);
         }
       });
@@ -1397,9 +1612,15 @@
           const matchClient = (job.client || '').toLowerCase().includes(searchVal);
           const matchNotes = (job.notes || '').toLowerCase().includes(searchVal);
           const matchTracking = (job.trackingInfo || '').toLowerCase().includes(searchVal);
+          const matchVehicle = (job.dispatchData?.vehicleNo || '').toLowerCase().includes(searchVal);
+          const matchCourier = (job.dispatchData?.trackingNo || '').toLowerCase().includes(searchVal);
+          const matchDriver = (job.dispatchData?.driverName || '').toLowerCase().includes(searchVal);
           const matchUser = (job.updatedByName || job.createdByName || '').toLowerCase().includes(searchVal);
           const matchId = (job.id || '').toLowerCase().includes(searchVal);
-          if (!matchTitle && !matchClient && !matchNotes && !matchId && !matchUser && !matchTracking) return false;
+
+          if (!matchTitle && !matchClient && !matchNotes && !matchId && !matchUser && !matchTracking && !matchVehicle && !matchCourier && !matchDriver) {
+            return false;
+          }
         }
 
         const qty = parseInt(job.quantity, 10);
@@ -1446,7 +1667,54 @@
       if (isDelivered) {
         statusText = '✓ DELIVERED TO CLIENT';
       } else if (isDispatched) {
-        statusText = '🚚 COURIER IN-TRANSIT';
+        statusText = '🚚 DISPATCHED (IN-TRANSIT)';
+      }
+
+      let dispatchHtml = '';
+      if (isDispatched && job.dispatchData) {
+        const d = job.dispatchData;
+        if (d.type === 'courier') {
+          dispatchHtml = `
+            <div class="dispatch-info-card" onclick="openViewDispatchModal('${job.id}')" title="Click to view full dispatch & tracking details">
+              <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
+                <span>🚚</span>
+                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  <strong style="color: #38bdf8;">${escapeHtml(d.partner || 'Courier')}:</strong>
+                  <span style="font-family: monospace; font-weight: bold; color: #ffffff;">${escapeHtml(d.trackingNo || 'No AWB')}</span>
+                </div>
+              </div>
+              <span style="font-size: 10px; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 2px 6px; border-radius: 4px; white-space: nowrap;">
+                Details ➔
+              </span>
+            </div>
+          `;
+        } else {
+          dispatchHtml = `
+            <div class="dispatch-info-card" onclick="openViewDispatchModal('${job.id}')" title="Click to view vehicle & driver details">
+              <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
+                <span>🚐</span>
+                <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                  <strong style="color: #38bdf8;">Vehicle:</strong>
+                  <span style="font-family: monospace; font-weight: bold; color: #ffffff;">${escapeHtml(d.vehicleNo || 'Direct')}</span>
+                  ${d.driverName ? `<span style="color: #94a3b8; font-size: 10px;">(${escapeHtml(d.driverName)})</span>` : ''}
+                </div>
+              </div>
+              <span style="font-size: 10px; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 2px 6px; border-radius: 4px; white-space: nowrap;">
+                Details ➔
+              </span>
+            </div>
+          `;
+        }
+      } else if (job.trackingInfo) {
+        dispatchHtml = `
+          <div class="dispatch-info-card" onclick="openViewDispatchModal('${job.id}')" title="Click to view details">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span>🚚</span>
+              <span style="font-family: monospace; font-weight: bold;">${escapeHtml(job.trackingInfo)}</span>
+            </div>
+            <span style="font-size: 10px; color: #38bdf8;">View</span>
+          </div>
+        `;
       }
 
       return `
@@ -1476,14 +1744,7 @@
               `}
             </div>
 
-            ${job.trackingInfo ? `
-              <div style="margin-top: 8px; padding: 6px 10px; border-radius: 8px; background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.25); color: #7dd3fc; font-size: 11px; display: flex; align-items: center; gap: 6px;">
-                <span>🚚</span>
-                <div style="font-family: monospace; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                  ${escapeHtml(job.trackingInfo)}
-                </div>
-              </div>
-            ` : ''}
+            ${dispatchHtml}
 
             ${job.notes ? `
               <div style="margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); color: #fde68a; font-size: 11px; display: flex; gap: 6px;">
@@ -1539,7 +1800,7 @@
                     type="button"
                     onclick="handleStageToggleClick('${job.id}', '${st.id}')"
                     class="stage-btn ${customClass} ${isDone ? 'done' : ''}"
-                    title="${hasSession ? 'Click to toggle stage status' : 'Login required'}"
+                    title="${hasSession ? (st.isDispatch ? 'Click to record/view dispatch details' : 'Click to toggle stage') : 'Login required'}"
                   >
                     <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; gap: 4px;">
                       <span>${st.icon}</span>
@@ -1566,7 +1827,6 @@
       `;
     }
 
-    // Direct single card updater: updates targeted card without re-rendering whole list
     function updateJobCardElement(jobId) {
       const card = document.getElementById(`card-${jobId}`);
       const job = jobs.find(j => j.id === jobId);
@@ -1577,7 +1837,6 @@
       }
     }
 
-    // SINGLE-CLICK INSTANT UI TOGGLE (Optimistic UI - No Delay)
     window.handleStageToggleClick = function(jobId, stageId) {
       if (!requireUserAuth()) return;
 
@@ -1585,33 +1844,45 @@
       if (!job) return;
 
       if (!job.stages) job.stages = {};
+
+      // If clicking Courier Dispatched stage:
+      if (stageId === 'courier_dispatched') {
+        const isCurrentlyDone = job.stages['courier_dispatched'] === true;
+        
+        // If not yet dispatched, open the Dispatch Entry Modal directly
+        if (!isCurrentlyDone) {
+          openDispatchStageModal(jobId);
+          return;
+        } else {
+          // If already dispatched, open view/edit modal
+          openViewDispatchModal(jobId);
+          return;
+        }
+      }
+
+      // Normal stage toggle for other production stages
       const newStatus = !job.stages[stageId];
       job.stages[stageId] = newStatus;
       job.updatedAt = Date.now();
       job.updatedBy = currentUserId;
       job.updatedByName = currentUserSession.name;
 
-      // 1. INSTANT OPTIMISTIC DOM REFLECTION: Click immediately changes state
+      // 1. Optimistic instant visual update
       const btn = document.getElementById(`btn-${jobId}-${stageId}`);
       const check = document.getElementById(`check-${jobId}-${stageId}`);
       if (btn) {
-        if (newStatus) {
-          btn.classList.add('done');
-        } else {
-          btn.classList.remove('done');
-        }
+        if (newStatus) btn.classList.add('done');
+        else btn.classList.remove('done');
       }
       if (check) {
         check.innerText = newStatus ? '✓' : '○';
       }
 
-      // 2. Persist to Local Storage
+      // 2. Persist locally and refresh the card metadata
       saveLocalJobs();
-
-      // 3. Fast non-blocking update of the card header / progress bar
       updateJobCardElement(jobId);
 
-      // 4. Emit Lightweight MQTT Broadcast
+      // 3. Emit MQTT broadcast to update all connected devices
       broadcastMessage({
         type: 'STAGE_TOGGLE',
         sender: currentUserId,
@@ -1622,8 +1893,315 @@
         updatedByName: currentUserSession.name
       });
 
-      const stageName = stageId === 'courier_dispatched' ? 'Courier Dispatched' : (stageId === 'delivered' ? 'Delivered & Received' : stageId);
-      showToast(`${job.title}: ${stageName} ${newStatus ? 'Completed' : 'Reset'} (${currentUserSession.name})`, newStatus ? 'success' : 'default');
+      const done = job.stages[stageId];
+      const stageName = stageId === 'delivered' ? 'Delivered & Received' : stageId;
+      showToast(`${job.title}: ${stageName} ${done ? 'Completed' : 'Reset'} (${currentUserSession.name})`, done ? 'success' : 'default');
+    };
+
+    function openDispatchStageModal(jobId) {
+      const job = jobs.find(j => j.id === jobId);
+      if (!job) return;
+
+      currentDispatchJobId = jobId;
+      document.getElementById('dispatchTargetJobId').value = jobId;
+      document.getElementById('dispatchJobTitleDisplay').innerText = `${job.title} (${job.client || 'General Client'})`;
+
+      clearVehicleImage();
+
+      // Populate existing values if editing
+      if (job.dispatchData) {
+        const d = job.dispatchData;
+        setDispatchInputMode(d.type || 'courier');
+        if (d.type === 'courier') {
+          document.getElementById('dispatchCourierPartner').value = d.partner || 'DTDC Express';
+          document.getElementById('dispatchTrackingNo').value = d.trackingNo || '';
+          document.getElementById('dispatchTrackingUrl').value = d.trackingUrl || '';
+        } else {
+          document.getElementById('dispatchVehicleNo').value = d.vehicleNo || '';
+          document.getElementById('dispatchDriverName').value = d.driverName || '';
+          document.getElementById('dispatchDriverPhone').value = d.driverPhone || '';
+          document.getElementById('dispatchArrivalTime').value = d.estimatedArrival || '';
+          
+          if (d.vehiclePhoto) {
+            tempVehicleImage = d.vehiclePhoto;
+            document.getElementById('vehicleImagePreview').src = d.vehiclePhoto;
+            document.getElementById('vehicleUploadPlaceholder').style.display = 'none';
+            document.getElementById('vehicleImagePreviewContainer').style.display = 'flex';
+          }
+        }
+        document.getElementById('dispatchRemarks').value = d.remarks || '';
+      } else {
+        document.getElementById('dispatchStageForm').reset();
+        setDispatchInputMode('courier');
+        document.getElementById('dispatchTargetJobId').value = jobId;
+        
+        // Default ETA: Current time + 2 hours in local ISO format
+        const defaultArrival = new Date(Date.now() + 2 * 60 * 60 * 1000);
+        const localIso = new Date(defaultArrival.getTime() - defaultArrival.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+        document.getElementById('dispatchArrivalTime').value = localIso;
+      }
+
+      openModal('dispatchStageModal');
+    }
+
+    window.closeDispatchStageModal = function() {
+      closeModal('dispatchStageModal');
+      clearVehicleImage();
+      currentDispatchJobId = null;
+    };
+
+    window.handleVehicleImageSelection = function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        compressBase64Image(evt.target.result, 600, 0.65, (compressedData) => {
+          tempVehicleImage = compressedData;
+          document.getElementById('vehicleImagePreview').src = compressedData;
+          document.getElementById('vehicleUploadPlaceholder').style.display = 'none';
+          document.getElementById('vehicleImagePreviewContainer').style.display = 'flex';
+        });
+      };
+      reader.readAsDataURL(file);
+    };
+
+    window.clearVehicleImage = function(e) {
+      if (e) e.stopPropagation();
+      tempVehicleImage = null;
+      const fileInput = document.getElementById('vehicleImageInput');
+      if (fileInput) fileInput.value = '';
+      const placeholder = document.getElementById('vehicleUploadPlaceholder');
+      const container = document.getElementById('vehicleImagePreviewContainer');
+      if (placeholder) placeholder.style.display = 'block';
+      if (container) container.style.display = 'none';
+    };
+
+    window.setDispatchInputMode = function(mode) {
+      const cardCourier = document.getElementById('modeCardCourier');
+      const cardVehicle = document.getElementById('modeCardVehicle');
+      const radioCourier = document.getElementById('radioModeCourier');
+      const radioVehicle = document.getElementById('radioModeVehicle');
+      const courierGroup = document.getElementById('courierInputsGroup');
+      const vehicleGroup = document.getElementById('vehicleInputsGroup');
+
+      if (mode === 'courier') {
+        radioCourier.checked = true;
+        cardCourier.classList.add('selected');
+        cardVehicle.classList.remove('selected');
+        courierGroup.style.display = 'flex';
+        vehicleGroup.style.display = 'none';
+      } else {
+        radioVehicle.checked = true;
+        cardVehicle.classList.add('selected');
+        cardCourier.classList.remove('selected');
+        vehicleGroup.style.display = 'flex';
+        courierGroup.style.display = 'none';
+      }
+    };
+
+    window.handleDispatchStageSubmit = function(e) {
+      e.preventDefault();
+      if (!requireUserAuth()) return;
+
+      const jobId = document.getElementById('dispatchTargetJobId').value;
+      const job = jobs.find(j => j.id === jobId);
+      if (!job) return;
+
+      const isCourier = document.getElementById('radioModeCourier').checked;
+      const remarks = document.getElementById('dispatchRemarks').value.trim();
+
+      let dispatchData = {
+        type: isCourier ? 'courier' : 'vehicle',
+        remarks: remarks,
+        dispatchedAt: Date.now()
+      };
+
+      let trackingSummary = '';
+
+      if (isCourier) {
+        const partner = document.getElementById('dispatchCourierPartner').value;
+        const trackingNo = document.getElementById('dispatchTrackingNo').value.trim();
+        const trackingUrl = document.getElementById('dispatchTrackingUrl').value.trim();
+
+        if (!trackingNo) {
+          showToast('Please enter Courier Tracking / AWB Number!', 'warning');
+          return;
+        }
+
+        dispatchData.partner = partner;
+        dispatchData.trackingNo = trackingNo;
+        dispatchData.trackingUrl = trackingUrl;
+        trackingSummary = `${partner}: ${trackingNo}`;
+      } else {
+        const vehicleNo = document.getElementById('dispatchVehicleNo').value.trim();
+        const driverName = document.getElementById('dispatchDriverName').value.trim();
+        const driverPhone = document.getElementById('dispatchDriverPhone').value.trim();
+        const arrivalTime = document.getElementById('dispatchArrivalTime').value;
+
+        if (!vehicleNo) {
+          showToast('Please enter Vehicle Number (e.g. KL 11 BV 4521)!', 'warning');
+          return;
+        }
+
+        if (!driverName) {
+          showToast('Please enter Driver Name!', 'warning');
+          return;
+        }
+
+        dispatchData.vehicleNo = vehicleNo;
+        dispatchData.driverName = driverName;
+        dispatchData.driverPhone = driverPhone;
+        dispatchData.estimatedArrival = arrivalTime;
+        dispatchData.vehiclePhoto = tempVehicleImage || null;
+        
+        let arrivalFormatted = '';
+        if (arrivalTime) {
+          const arrD = new Date(arrivalTime);
+          arrivalFormatted = ` • ETA: ${arrD.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+        }
+        trackingSummary = `Vehicle: ${vehicleNo} (${driverName})${arrivalFormatted}`;
+      }
+
+      if (!job.stages) job.stages = {};
+      job.stages['courier_dispatched'] = true;
+      job.dispatchData = dispatchData;
+      job.trackingInfo = trackingSummary;
+      job.updatedAt = Date.now();
+      job.updatedBy = currentUserId;
+      job.updatedByName = currentUserSession.name;
+
+      saveLocalJobs();
+      updateJobCardElement(job.id);
+      closeDispatchStageModal();
+
+      // Realtime MQTT Broadcast with dispatch information
+      broadcastMessage({
+        type: 'STAGE_TOGGLE',
+        sender: currentUserId,
+        jobId: job.id,
+        stageId: 'courier_dispatched',
+        isDone: true,
+        dispatchData: dispatchData,
+        trackingInfo: trackingSummary,
+        updatedAt: job.updatedAt,
+        updatedByName: currentUserSession.name
+      });
+
+      showToast(`🚚 "${job.title}" successfully dispatched!`, 'success');
+    };
+
+    window.openViewDispatchModal = function(jobId) {
+      const job = jobs.find(j => j.id === jobId);
+      if (!job) return;
+
+      const body = document.getElementById('viewDispatchBody');
+      const header = document.getElementById('viewDispatchHeader');
+      const copyBtn = document.getElementById('copyWhatsAppDispatchBtn');
+      const editBtn = document.getElementById('editDispatchDetailsBtn');
+
+      header.innerText = `Dispatch Record: ${job.title}`;
+
+      let content = '';
+      let waMessage = '';
+
+      if (job.dispatchData) {
+        const d = job.dispatchData;
+        const timeStr = d.dispatchedAt ? new Date(d.dispatchedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'Recorded';
+
+        if (d.type === 'courier') {
+          content = `
+            <div style="background: rgba(14, 165, 233, 0.12); border: 1px solid rgba(14, 165, 233, 0.35); border-radius: 12px; padding: 12px;">
+              <div style="font-size: 10px; font-weight: 800; color: #38bdf8; text-transform: uppercase;">Courier Dispatch</div>
+              <div style="font-size: 14px; font-weight: 800; color: #ffffff; margin-top: 2px;">${escapeHtml(d.partner)}</div>
+              <div style="margin-top: 8px; background: #0b0f19; padding: 8px; border-radius: 8px; border: 1px solid #1e293b; display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 10px; color: #94a3b8;">AWB / TRACKING:</span>
+                <span style="font-family: monospace; font-weight: bold; color: #38bdf8; font-size: 13px;">${escapeHtml(d.trackingNo)}</span>
+              </div>
+              ${d.trackingUrl ? `
+                <div style="margin-top: 6px; text-align: right;">
+                  <a href="${escapeHtml(d.trackingUrl)}" target="_blank" rel="noopener noreferrer" style="color: #38bdf8; font-size: 11px; text-decoration: underline;">
+                    Track Online ➔
+                  </a>
+                </div>
+              ` : ''}
+            </div>
+          `;
+          waMessage = `Hello ${job.client || 'Customer'}, your PrintoCards order "${job.title}" (${job.quantity || ''} pcs) has been dispatched via ${d.partner}. AWB Tracking No: ${d.trackingNo}.`;
+        } else {
+          const arrivalStr = d.estimatedArrival ? new Date(d.estimatedArrival).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'Pending Confirmation';
+
+          content = `
+            <div style="background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: 12px; padding: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                  <div style="font-size: 10px; font-weight: 800; color: #34d399; text-transform: uppercase;">Direct Vehicle Delivery</div>
+                  <div style="font-size: 14px; font-family: monospace; font-weight: 800; color: #ffffff; margin-top: 2px;">${escapeHtml(d.vehicleNo)}</div>
+                </div>
+                ${d.vehiclePhoto ? `
+                  <div onclick="openLightbox('${d.vehiclePhoto}', 'Vehicle: ${escapeHtml(d.vehicleNo)}')" style="cursor: pointer;" title="Click to view vehicle/delivery photo">
+                    <img src="${d.vehiclePhoto}" alt="Vehicle Photo" style="width: 44px; height: 44px; border-radius: 8px; object-fit: cover; border: 1.5px solid #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);">
+                  </div>
+                ` : ''}
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px;">
+                <div style="background: #0b0f19; padding: 6px 8px; border-radius: 8px; border: 1px solid #1e293b;">
+                  <span style="font-size: 9px; color: #94a3b8; display: block;">DRIVER</span>
+                  <span style="font-size: 11px; font-weight: bold; color: #e2e8f0;">${escapeHtml(d.driverName || 'Assigned')}</span>
+                </div>
+                <div style="background: #0b0f19; padding: 6px 8px; border-radius: 8px; border: 1px solid #1e293b;">
+                  <span style="font-size: 9px; color: #94a3b8; display: block;">PHONE</span>
+                  <span style="font-size: 11px; font-family: monospace; font-weight: bold; color: #10b981;">${escapeHtml(d.driverPhone || 'N/A')}</span>
+                </div>
+              </div>
+
+              <div style="background: #0b0f19; padding: 8px 10px; border-radius: 8px; border: 1px solid #1e293b; margin-top: 6px;">
+                <span style="font-size: 9px; color: #94a3b8; display: block;">ESTIMATED ARRIVAL TIME (ETA)</span>
+                <span style="font-size: 12px; font-weight: 800; color: #38bdf8;">⏰ ${arrivalStr}</span>
+              </div>
+            </div>
+          `;
+          waMessage = `Hello ${job.client || 'Customer'}, your PrintoCards order "${job.title}" has been dispatched via vehicle ${d.vehicleNo}. Driver: ${d.driverName || 'Our Delivery Executive'} (${d.driverPhone || 'N/A'}). Estimated Arrival: ${arrivalStr}.`;
+        }
+
+        content += `
+          <div style="font-size: 11px; color: #94a3b8; padding: 4px 0;">
+            <div>🕒 Dispatched: <strong style="color: #cbd5e1;">${timeStr}</strong></div>
+            ${d.remarks ? `<div style="margin-top: 4px;">📝 Notes: <em style="color: #cbd5e1;">${escapeHtml(d.remarks)}</em></div>` : ''}
+          </div>
+        `;
+      } else {
+        content = `
+          <div style="background: #0b0f19; padding: 12px; border-radius: 10px; border: 1px solid #1e293b; color: #94a3b8;">
+            Tracking Info: <strong style="color: #38bdf8;">${escapeHtml(job.trackingInfo || 'Not specified')}</strong>
+          </div>
+        `;
+        waMessage = `Hello ${job.client || 'Customer'}, your PrintoCards order "${job.title}" tracking info: ${job.trackingInfo || 'Dispatched'}.`;
+      }
+
+      body.innerHTML = content;
+
+      copyBtn.onclick = function() {
+        const temp = document.createElement('textarea');
+        temp.value = waMessage;
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand('copy');
+        document.body.removeChild(temp);
+        showToast('WhatsApp tracking message copied to clipboard!', 'success');
+      };
+
+      editBtn.onclick = function() {
+        closeViewDispatchModal();
+        openDispatchStageModal(jobId);
+      };
+
+      openModal('viewDispatchDetailsModal');
+    };
+
+    window.closeViewDispatchModal = function() {
+      closeModal('viewDispatchDetailsModal');
     };
 
     window.handleCreateJob = function(e) {
@@ -1637,7 +2215,6 @@
       const client = document.getElementById('jobClient').value.trim();
       const quantity = document.getElementById('jobQuantity').value.trim();
       const deliveryDate = document.getElementById('jobDelivery').value;
-      const trackingInfo = document.getElementById('jobTracking').value.trim();
       const notes = document.getElementById('jobNotes').value.trim();
       const creatorName = currentUserSession.name;
 
@@ -1648,7 +2225,8 @@
         client: client,
         quantity: quantity,
         deliveryDate: deliveryDate,
-        trackingInfo: trackingInfo,
+        trackingInfo: '',
+        dispatchData: null,
         notes: notes,
         proofImage: tempNewJobImage || null,
         stages: {},
@@ -1674,7 +2252,6 @@
       showToast(`New job "${title}" created!`, 'success');
     };
 
-    // High-Definition Responsive Compression (800px HD with High-Quality Antialiasing)
     window.handleImageSelection = function(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -1973,15 +2550,17 @@
           'Order Status',
           'Courier Dispatched?',
           'Delivered to Client?',
-          'Courier / Tracking Info',
+          'Dispatch Mode',
+          'Courier Partner / Vehicle No',
+          'Tracking AWB / Driver',
+          'Dispatch Remarks',
           'Completed Stages Count',
           'Total Stages',
-          'Completed Stages List',
           'Special Notes',
           'Created By',
-          'Created Date & Time',
+          'Created Date',
           'Last Updated By',
-          'Last Updated Date & Time'
+          'Last Updated Date'
         ];
 
         const sanitize = (val) => {
@@ -1992,17 +2571,13 @@
         const rows = list.map(j => {
           const stagesList = getJobStages(j.jobType || 'lanyard');
           let doneCount = 0;
-          const doneNames = [];
-          
           stagesList.forEach(st => {
-            if (j.stages && j.stages[st.id]) {
-              doneCount++;
-              doneNames.push(st.name);
-            }
+            if (j.stages && j.stages[st.id]) doneCount++;
           });
 
           const isDispatched = j.stages && j.stages['courier_dispatched'] === true;
           const isDelivered = j.stages && j.stages['delivered'] === true;
+          const d = j.dispatchData || {};
 
           const createdDateFormatted = j.createdAt ? new Date(j.createdAt).toLocaleString('en-IN') : '';
           const updatedDateFormatted = j.updatedAt ? new Date(j.updatedAt).toLocaleString('en-IN') : createdDateFormatted;
@@ -2014,13 +2589,15 @@
             sanitize(j.client),
             sanitize(j.quantity),
             sanitize(j.deliveryDate),
-            sanitize(isDelivered ? 'DELIVERED' : (isDispatched ? 'IN-TRANSIT' : 'IN-PRODUCTION')),
+            sanitize(isDelivered ? 'DELIVERED' : (isDispatched ? 'DISPATCHED' : 'IN-PRODUCTION')),
             sanitize(isDispatched ? 'YES' : 'NO'),
             sanitize(isDelivered ? 'YES' : 'NO'),
-            sanitize(j.trackingInfo || ''),
+            sanitize(d.type === 'courier' ? 'Courier Service' : (d.type === 'vehicle' ? 'Company Vehicle' : '')),
+            sanitize(d.type === 'courier' ? d.partner : (d.type === 'vehicle' ? d.vehicleNo : j.trackingInfo || '')),
+            sanitize(d.type === 'courier' ? d.trackingNo : (d.type === 'vehicle' ? `${d.driverName || ''} ${d.driverPhone || ''}` : '')),
+            sanitize(d.remarks || ''),
             sanitize(doneCount),
             sanitize(stagesList.length),
-            sanitize(doneNames.join(' | ')),
             sanitize(j.notes),
             sanitize(j.createdByName || 'Admin'),
             sanitize(createdDateFormatted),
@@ -2098,6 +2675,12 @@
       if (document.visibilityState === 'visible') {
         if (!mqttClient || !mqttClient.connected) {
           connectToActiveBroker();
+        } else {
+          // Immediately poll peers when app tab/window becomes active again
+          broadcastMessage({
+            type: 'STATE_REQUEST',
+            sender: currentUserId
+          });
         }
       }
     });
