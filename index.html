@@ -10,6 +10,9 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>PrintoCards Production & Dispatch Tracker</title>
 
+  <!-- Stable Multi-Device WebSocket Engine -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mqtt/5.3.4/mqtt.min.js"></script>
+
   <style>
     /* PURE NATIVE CSS - ZERO EXTERNAL ASSET DEPENDENCY */
     *, *::before, *::after {
@@ -587,6 +590,7 @@
     </div>
   </main>
 
+  <!-- Dispatch Modal -->
   <div id="dispatchStageModal" class="app-modal">
     <div class="modal-card" style="max-width: 430px; display: flex; flex-direction: column;">
       <div style="padding: 14px 18px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(15, 23, 42, 1));">
@@ -709,6 +713,7 @@
     </div>
   </div>
 
+  <!-- View Dispatch Modal -->
   <div id="viewDispatchDetailsModal" class="app-modal">
     <div class="modal-card" style="max-width: 380px; padding: 20px;">
       <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #1e293b; padding-bottom: 10px; margin-bottom: 12px;">
@@ -729,14 +734,15 @@
           <button type="button" id="editDispatchDetailsBtn" class="btn btn-dark" style="flex: 1; justify-content: center;">
             ✏ Edit Details
           </button>
-          <button type="button" onclick="closeViewDispatchModal()" class="btn btn-dark" style="flex: 1; justify-content: center;">
-            Close
+          <button type="button" id="resetDispatchStageBtn" class="btn" style="flex: 1; justify-content: center; background: rgba(244, 63, 94, 0.2); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.4);">
+            ↺ Reset Stage
           </button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Factory Lock Modal -->
   <div id="factoryLockModal" class="app-modal">
     <div class="modal-card" style="padding: 24px; text-align: center; max-width: 360px;">
       <div style="width: 50px; height: 50px; border-radius: 14px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #10b981; display:flex; align-items:center; justify-content:center; font-size: 24px; margin: 0 auto 14px auto;">
@@ -768,6 +774,7 @@
     </div>
   </div>
 
+  <!-- Staff Login Modal -->
   <div id="authModal" class="app-modal">
     <div class="modal-card" style="padding: 24px; text-align: center; max-width: 340px;">
       <div style="width: 48px; height: 48px; border-radius: 12px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); color: #10b981; display:flex; align-items:center; justify-content:center; font-size: 22px; margin: 0 auto 12px auto;">
@@ -811,6 +818,7 @@
     </div>
   </div>
 
+  <!-- Accounts Manager Modal -->
   <div id="manageUsersModal" class="app-modal">
     <div class="modal-card" style="padding: 20px; max-width: 380px;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid #1e293b; padding-bottom: 8px;">
@@ -839,6 +847,7 @@
     </div>
   </div>
 
+  <!-- New Job Modal -->
   <div id="newJobModal" class="app-modal">
     <div class="modal-card" style="max-height: 92vh; display: flex; flex-direction: column;">
       <div style="padding: 14px 18px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between;">
@@ -925,6 +934,7 @@
     </div>
   </div>
 
+  <!-- Channel Settings Modal -->
   <div id="channelSettingsModal" class="app-modal">
     <div class="modal-card" style="padding: 20px; max-width: 340px;">
       <h4 style="font-size: 14px; font-weight: 800; color: #ffffff; margin-bottom: 8px;">⚙ Channel Settings</h4>
@@ -945,6 +955,7 @@
     </div>
   </div>
 
+  <!-- Delete Confirm Modal -->
   <div id="deleteConfirmModal" class="app-modal">
     <div class="modal-card" style="padding: 20px; text-align: center; max-width: 300px;">
       <div style="width: 44px; height: 44px; border-radius: 12px; background: rgba(244, 63, 94, 0.15); border: 1px solid rgba(244, 63, 94, 0.4); color: #f43f5e; display:flex; align-items:center; justify-content:center; font-size: 20px; margin: 0 auto 10px auto;">
@@ -960,6 +971,7 @@
     </div>
   </div>
 
+  <!-- Lightbox Modal -->
   <div id="imageLightboxModal" class="app-modal" onclick="closeLightbox()">
     <div style="position: relative; max-width: 90vw; max-height: 85vh;" onclick="event.stopPropagation()">
       <button type="button" onclick="closeLightbox()" style="position: absolute; top: -35px; right: 0; background: #1e293b; color: #ffffff; border: none; padding: 4px 10px; border-radius: 20px; font-size: 11px; cursor: pointer;">✕ Close</button>
@@ -996,6 +1008,8 @@
       { id: 'courier_dispatched', name: 'Courier Dispatched',  icon: '🚚', isDispatch: true },
       { id: 'delivered',          name: 'Delivered / Received',icon: '📬', isDelivered: true }
     ];
+
+    const PRIMARY_BROKER = 'wss://broker.emqx.io:8084/mqtt';
 
     const DEFAULT_STAFF_ACCOUNTS = [
       { username: 'asif',       pin: '2026', name: 'Mhd Asif',        role: 'admin' },
@@ -1038,14 +1052,10 @@
     let tempVehicleImage = null;
     let pendingDeleteId = null;
     let currentDispatchJobId = null;
+    let mqttClient = null;
+    let isConnectedToCloud = false;
 
-    /* High-Reliability Native WebSocket Engine (Port 443 - Standard SSL WebSockets - Never Blocked) */
-    const PIESOCKET_API_KEY = 'oCdCMcMPQpbvNjUIzqtvF1d2X2okWpDQj4AwARJuAgtjhzKxVEjQU6IdCjwm';
-    let nativeWs = null;
-    let wsHeartbeat = null;
-    let wsReconnectTimeout = null;
-
-    // Cross-Tab Instant Sync (Works immediately with 0ms latency across browser tabs)
+    // Fast Cross-Tab Broadcast Channel
     const localBroadcastChannel = (typeof window.BroadcastChannel !== 'undefined') 
       ? new BroadcastChannel(`printo_bc_${(factorySyncChannel || DEFAULT_FACTORY_PASS).toUpperCase()}`) 
       : null;
@@ -1326,98 +1336,92 @@
         closeModal('factoryLockModal');
       }
 
-      connectToNativeWebSocket();
+      connectToActiveBroker();
     }
 
-    function getRoomChannelName() {
-      const channel = (factorySyncChannel || DEFAULT_FACTORY_PASS).toUpperCase().replace(/[^A-Z0-9_-]/g, '');
-      return `printo_factory_${channel}`;
+    function getSyncTopic() {
+      const channel = (factorySyncChannel || DEFAULT_FACTORY_PASS).toUpperCase();
+      return `printocards_factory_sync_v24/${channel}`;
     }
 
-    function connectToNativeWebSocket() {
-      clearTimeout(wsReconnectTimeout);
-      updateSyncBadge('connecting', 'Connecting...');
-
-      const room = getRoomChannelName();
-      const wsUrl = `wss://demo.piesocket.com/v3/${room}?api_key=${PIESOCKET_API_KEY}&notify_self=0`;
+    function connectToActiveBroker() {
+      updateSyncBadge('connecting', 'Connecting to Cloud...');
+      const clientId = 'printo_' + currentUserId + '_' + Math.random().toString(16).substring(2, 6);
 
       try {
-        if (nativeWs) {
-          try { nativeWs.onclose = null; nativeWs.close(); } catch(e){}
+        if (mqttClient) {
+          try { mqttClient.end(true); } catch(e){}
         }
 
-        nativeWs = new WebSocket(wsUrl);
+        mqttClient = mqtt.connect(PRIMARY_BROKER, {
+          clientId: clientId,
+          clean: true,
+          connectTimeout: 8000,
+          reconnectPeriod: 3000,
+          keepalive: 20
+        });
 
-        nativeWs.onopen = function() {
+        const topic = getSyncTopic();
+
+        mqttClient.on('connect', () => {
+          isConnectedToCloud = true;
           updateSyncBadge('connected', 'Live Cloud Sync');
+          mqttClient.subscribe(topic, { qos: 1 });
           
-          // Request fresh state from any active peer on connection
           broadcastMessage({
             type: 'STATE_REQUEST',
             sender: currentUserId
           });
+        });
 
-          // Keep connection alive with silent ping
-          clearInterval(wsHeartbeat);
-          wsHeartbeat = setInterval(() => {
-            if (nativeWs && nativeWs.readyState === WebSocket.OPEN) {
-              nativeWs.send(JSON.stringify({ type: 'PING', sender: currentUserId }));
-            }
-          }, 20000);
-        };
-
-        nativeWs.onmessage = function(event) {
+        mqttClient.on('message', (t, payload) => {
           try {
-            if (!event.data) return;
-            const data = JSON.parse(event.data);
-            if (!data || data.sender === currentUserId || data.type === 'PING') return;
+            const data = JSON.parse(payload.toString());
+            if (!data || data.sender === currentUserId) return;
             handleIncomingBroadcast(data);
-          } catch(err) {}
-        };
+          } catch (e) {}
+        });
 
-        nativeWs.onerror = function() {
-          updateSyncBadge('offline', 'Retrying...');
-        };
+        mqttClient.on('error', () => {
+          updateSyncBadge('offline', 'Retrying Connection...');
+        });
 
-        nativeWs.onclose = function() {
-          clearInterval(wsHeartbeat);
-          updateSyncBadge('offline', 'Reconnecting...');
-          clearTimeout(wsReconnectTimeout);
-          wsReconnectTimeout = setTimeout(connectToNativeWebSocket, 2000);
-        };
+        mqttClient.on('close', () => {
+          if (isConnectedToCloud) {
+            isConnectedToCloud = false;
+            updateSyncBadge('offline', 'Reconnecting...');
+          }
+        });
 
       } catch (err) {
         updateSyncBadge('offline', 'Offline Mode');
-        clearTimeout(wsReconnectTimeout);
-        wsReconnectTimeout = setTimeout(connectToNativeWebSocket, 3000);
       }
     }
 
     window.manualForceReconnect = function() {
       showToast('Reconnecting cloud sync...', 'info');
-      connectToNativeWebSocket();
+      connectToActiveBroker();
     };
 
     function broadcastMessage(payloadObj) {
-      const rawString = JSON.stringify(payloadObj);
-
-      // 1. Instant local cross-tab sync
+      // 1. Instant local tab reflection
       if (localBroadcastChannel) {
         try { localBroadcastChannel.postMessage(payloadObj); } catch(e){}
       }
 
-      // 2. High-speed cloud WebSocket broadcast
-      if (nativeWs && nativeWs.readyState === WebSocket.OPEN) {
+      // 2. High-speed MQTT Cloud Broadcast
+      if (mqttClient && mqttClient.connected) {
         try {
-          nativeWs.send(rawString);
-        } catch(e) {}
+          const topic = getSyncTopic();
+          mqttClient.publish(topic, JSON.stringify(payloadObj), { qos: 1, retain: false });
+        } catch (e) {}
       }
     }
 
     function handleIncomingBroadcast(data) {
       if (!data) return;
 
-      // 1. ATOMIC STAGE UPDATE (Instant update on all devices)
+      // 1. ATOMIC STAGE UPDATE (Instant update across all devices)
       if (data.type === 'STAGE_TOGGLE') {
         const job = jobs.find(j => j.id === data.jobId);
         if (job) {
@@ -1481,10 +1485,7 @@
       // 4. PEER STATE REPLICATION
       else if (data.type === 'STATE_REQUEST') {
         if (jobs.length > 0 || deletedJobIds.length > 0) {
-          const shareableJobs = jobs.slice(0, 30).map(j => ({
-            ...j,
-            proofImage: j.proofImage ? j.proofImage.slice(0, 400) + '...' : null
-          }));
+          const shareableJobs = jobs.slice(0, 30).map(j => ({ ...j }));
           broadcastMessage({
             type: 'STATE_SHARE',
             sender: currentUserId,
@@ -1853,14 +1854,12 @@
       // If clicking Courier Dispatched stage:
       if (stageId === 'courier_dispatched') {
         const isCurrentlyDone = job.stages['courier_dispatched'] === true;
-        
         if (!isCurrentlyDone) {
           openDispatchStageModal(jobId);
-          return;
         } else {
           openViewDispatchModal(jobId);
-          return;
         }
+        return;
       }
 
       // Normal stage toggle
@@ -2093,10 +2092,12 @@
       const job = jobs.find(j => j.id === jobId);
       if (!job) return;
 
+      currentDispatchJobId = jobId;
       const body = document.getElementById('viewDispatchBody');
       const header = document.getElementById('viewDispatchHeader');
       const copyBtn = document.getElementById('copyWhatsAppDispatchBtn');
       const editBtn = document.getElementById('editDispatchDetailsBtn');
+      const resetBtn = document.getElementById('resetDispatchStageBtn');
 
       header.innerText = `Dispatch Record: ${job.title}`;
 
@@ -2193,6 +2194,31 @@
       editBtn.onclick = function() {
         closeViewDispatchModal();
         openDispatchStageModal(jobId);
+      };
+
+      resetBtn.onclick = function() {
+        if (!requireUserAuth()) return;
+        if (!job.stages) job.stages = {};
+        job.stages['courier_dispatched'] = false;
+        job.updatedAt = Date.now();
+        job.updatedBy = currentUserId;
+        job.updatedByName = currentUserSession.name;
+
+        saveLocalJobs();
+        updateJobCardElement(job.id);
+        closeViewDispatchModal();
+
+        broadcastMessage({
+          type: 'STAGE_TOGGLE',
+          sender: currentUserId,
+          jobId: job.id,
+          stageId: 'courier_dispatched',
+          isDone: false,
+          updatedAt: job.updatedAt,
+          updatedByName: currentUserSession.name
+        });
+
+        showToast(`Dispatch stage reset for "${job.title}"`, 'warning');
       };
 
       openModal('viewDispatchDetailsModal');
@@ -2386,8 +2412,8 @@
       closeChannelModal();
       openModal('factoryLockModal');
       document.getElementById('initialAccessCodeInput').value = '';
-      if (nativeWs) {
-        try { nativeWs.close(); } catch(e){}
+      if (mqttClient) {
+        try { mqttClient.end(true); } catch(e){}
       }
       updateSyncBadge('offline', 'App Locked');
       updateChannelLabelDisplay();
@@ -2666,13 +2692,13 @@
 
     window.addEventListener('online', () => {
       showToast('Network restored. Reconnecting cloud...', 'info');
-      connectToNativeWebSocket();
+      connectToActiveBroker();
     });
 
     window.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        if (!nativeWs || nativeWs.readyState !== WebSocket.OPEN) {
-          connectToNativeWebSocket();
+        if (!mqttClient || !mqttClient.connected) {
+          connectToActiveBroker();
         } else {
           broadcastMessage({
             type: 'STATE_REQUEST',
